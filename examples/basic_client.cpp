@@ -1,7 +1,7 @@
 #include <atomic>
 #include <chrono>
 #include <csignal>
-#include <iostream>
+#include <print>
 #include <thread>
 
 #include "farsounder/config.hpp"
@@ -16,11 +16,16 @@ void handle_sigint(int) {
 }
 }  // namespace
 
+template <typename T>
+int to_int(const T& value) {
+    return static_cast<int>(value);
+}
+
 int main() {
-    std::cout << "Starting FarSounder example..." << std::endl;
+    std::println("Starting FarSounder example...");
     std::signal(SIGINT, handle_sigint);
 
-    std::cout << "Building config..." << std::endl;
+    std::println("Building config...");
     auto cfg = farsounder::config::build_config(
         "127.0.0.1",
         {
@@ -29,64 +34,69 @@ int main() {
         },
         {}, farsounder::config::CallbackExecutor::ThreadPool, 10.0);
 
-    std::cout << "Subscribing to TargetData..." << std::endl;
+    std::println("Create subscriber with our config...");
     auto sub = farsounder::subscribe(cfg);
 
-    std::cout << "Registering callback for TargetData..." << std::endl;
+    std::println("Registering callback for TargetData...");
     sub.on("TargetData", [](const proto::nav_api::TargetData& message) {
-        std::cout << "Got a TargetData!\n";
-        std::cout << "Targets: " << message.groups_size() << "\n";
+        std::println("*** Got a TargetData ***");
+        std::println("Targets: {}", message.groups_size());
+        std::println("Bins: {}", message.bottom_size());
+        std::println("");
     });
 
-    std::cout << "Registering callback for ProcessorSettings..." << std::endl;
+    std::println("Registering callback for ProcessorSettings...");
     sub.on("ProcessorSettings",
            [](const proto::nav_api::ProcessorSettings& message) {
-               std::cout << "Got a ProcessorSettings!\n";
-               std::cout << "Min Inwater Squelch: "
-                         << message.min_inwater_squelch() << "\n";
-               std::cout << "Max Inwater Squelch: "
-                         << message.max_inwater_squelch() << "\n";
-               std::cout << "Inwater Squelch: " << message.inwater_squelch()
-                         << "\n";
-               std::cout << "Squelchless Inwater Detector: "
-                         << message.squelchless_inwater_detector() << "\n";
-               std::cout << "System Type: " << message.system_type() << "\n";
-               std::cout << "Field Of View: " << message.fov() << "\n";
-               std::cout << "Detect Bottom: " << message.detect_bottom()
-                         << "\n";
+               std::println("*** Got a ProcessorSettings ***");
+               std::println("Min Inwater Squelch: {}",
+                            message.min_inwater_squelch());
+               std::println("Max Inwater Squelch: {}",
+                            message.max_inwater_squelch());
+               std::println("Inwater Squelch: {}", message.inwater_squelch());
+               std::println("Squelchless Inwater Detector: {}",
+                            message.squelchless_inwater_detector());
+               std::println("System Type: {}", to_int(message.system_type()));
+               std::println("Field Of View: {}", to_int(message.fov()));
+               std::println("Detect Bottom: {}", message.detect_bottom());
+               std::println("");
            });
 
-    std::cout << "Starting subscriber..." << std::endl;
-    sub.start();
+    try {
+        std::println("*** Requesting processor settings ***");
+        auto response = farsounder::requests::get_processor_settings(cfg);
+        std::println("Settings result code: {}",
+                     to_int(response.result().code()));
+        std::println("");
+    } catch (const std::exception& ex) {
+        std::println("Request failed: {}", ex.what());
+    }
 
     try {
-        std::cout << "Requesting processor settings..." << std::endl;
-        auto response = farsounder::requests::get_processor_settings(cfg);
-        std::cout << "Settings result code: " << response.result().code()
-                  << "\n";
-        std::cout << "Settings: " << response.settings().DebugString() << "\n";
-
-        std::cout << "Requesting history data..." << std::endl;
+        std::println("*** Requesting history data ***");
         auto history = farsounder::requests::get_history_data(
             cfg,
             // if you are playing back the Patience Island Survey dataset
             // these coordinates will have data
             41.6538, -71.3712, 500.0);
-        std::cout << "History bottom detections: "
-                  << history.gridded_bottom_detections.size() << "\n";
-        std::cout << "History inwater detections: "
-                  << history.gridded_inwater_detections.size() << "\n";
+        std::println("History bottom detections: {}",
+                     history.gridded_bottom_detections.size());
+        std::println("History inwater detections: {}",
+                     history.gridded_inwater_detections.size());
+        std::println("");
     } catch (const std::exception& ex) {
-        std::cerr << "Request failed: " << ex.what() << "\n";
+        std::println("Request failed: {}", ex.what());
     }
 
-    std::cout << "Running. Press Ctrl+C to exit." << std::endl;
+    std::println("*** Running receive loop - press Ctrl+C to exit ***");
+    sub.start();
+
     while (g_running) {
         std::this_thread::sleep_for(std::chrono::milliseconds(200));
     }
-    std::cout << "Stopping subscriber..." << std::endl;
+    std::println("Stopping subscriber...");
     sub.stop();
 
-    std::cout << "Done!" << std::endl;
+    std::println("Done!");
     return 0;
 }

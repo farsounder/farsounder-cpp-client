@@ -30,6 +30,7 @@ class Subscriber {
     Subscriber(Subscriber&&) = delete;
     Subscriber& operator=(Subscriber&&) = delete;
 
+    // TODO(Heath): Template these - make type safe
     void on(config::PubSubMessage message, HydrophoneCallback callback);
     void on(config::PubSubMessage message, TargetCallback callback);
     void on(config::PubSubMessage message, ProcessorSettingsCallback callback);

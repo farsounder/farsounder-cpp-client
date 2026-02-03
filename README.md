@@ -1,7 +1,11 @@
 # FarSounder C++ SDK
 
-This repository provides a C++23 client SDK for FarSounder's protobuf-over-ZeroMQ
-API using the `.proto` definitions in `proto/`.
+This repository provides a C++ client to communicate with an
+Argos sonar.
+
+>![NOTE]
+> This is still under active development and testing. But may serve as an example for
+> integration, beyond the lower level example in [sdk repo]().
 
 ## Build
 
@@ -17,6 +21,7 @@ cmake --build build
 ```
 
 ## Run a dummy server
+//TODO
 
 ## Include in a project
 1. Build the repo (or add as a subdir etc and build)
