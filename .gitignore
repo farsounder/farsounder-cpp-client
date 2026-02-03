@@ -1,0 +1,11 @@
+build
+
+# Executables / artifacts
+*.exe
+*.dll
+*.so
+*.dylib
+*.lib
+*.exp
+*.pdb
+*.ilk
