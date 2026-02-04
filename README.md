@@ -21,8 +21,7 @@ cmake --build build
 ```
 
 ## Run a dummy server
-// TODO - add server that will produce messages / respond to requests with fake
-// data
+// TODO - add server that will produce messages / respond to requests with fake data for testing
 
 ## Include in a project
 1. Build the repo (or add as a subdir etc and build)
@@ -43,7 +42,7 @@ target_link_libraries(my_app PRIVATE farsounder)
 ```
 
 ## Example usage:
-There is an example is in [basic_client.cpp](examples/basic_client.cpp).
+There is an example in [basic_client.cpp](examples/basic_client.cpp).
 
 ## Development
 
