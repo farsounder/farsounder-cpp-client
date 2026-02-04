@@ -21,14 +21,15 @@ cmake --build build
 ```
 
 ## Run a dummy server
-//TODO
+// TODO - add server that will produce messages / respond to requests with fake
+// data
 
 ## Include in a project
 1. Build the repo (or add as a subdir etc and build)
 2. Link against the farsounder target
 3. Include headers in include/
 
-In cmake (NOT TESTED YET):
+CMAKE example: In your CMakeLists.txt (NOT TESTED YET):
 
 ```
 FetchContent_Declare(
@@ -41,7 +42,8 @@ FetchContent_MakeAvailable(farsounder)
 target_link_libraries(my_app PRIVATE farsounder)
 ```
 
-
+## Example usage:
+There is an example is in [basic_client.cpp](examples/basic_client.cpp).
 
 ## Development
 
@@ -49,7 +51,3 @@ Autoformat with:
 ```
 clang-format -i src/*.cpp include/farsounder/*.hpp examples/*.cpp
 ```
-
-
-
-
