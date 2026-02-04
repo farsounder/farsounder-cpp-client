@@ -1,17 +1,18 @@
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.16)
 
 project(farsounder_sdk LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
-set(CMAKE_POLICY_VERSION_MINIMUM 3.5)
+set(CMAKE_POLICY_VERSION_MINIMUM 3.16)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 include(FetchContent)
 
 set(protobuf_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 set(protobuf_BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
+set(protobuf_MSVC_STATIC_RUNTIME OFF CACHE BOOL "" FORCE)
 
 FetchContent_Declare(
   protobuf
@@ -95,12 +96,12 @@ target_link_libraries(farsounder
     nlohmann_json::nlohmann_json
 )
 
-add_executable(farsounder_example examples/basic_client.cpp)
-target_link_libraries(farsounder_example PRIVATE farsounder)
-add_custom_command(
-  TARGET farsounder_example
-  POST_BUILD
-  COMMAND ${CMAKE_COMMAND} -E copy_if_different
-          $<TARGET_FILE:libzmq>
-          $<TARGET_FILE_DIR:farsounder_example>
-)
+# Create alias for namespaced usage
+add_library(farsounder::farsounder ALIAS farsounder)
+
+# Option to build examples
+option(FARSOUNDER_BUILD_EXAMPLES "Build examples" ON)
+
+if(FARSOUNDER_BUILD_EXAMPLES)
+  add_subdirectory(examples)
+endif()
