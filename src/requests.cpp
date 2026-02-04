@@ -90,10 +90,18 @@ history::GriddedInwaterDetection parse_gridded_inwater_detection(
     item.is_tide_corrected = payload.at("is_tide_corrected").get<bool>();
     item.uploaded_to_cloud = payload.at("uploaded_to_cloud").get<bool>();
     item.number_of_points = payload.at("number_of_points").get<std::int32_t>();
-    item.deepest_depth_meters =
-        payload.at("deepest_depth_meters").get<double>();
-    item.shallowest_depth_meters =
-        payload.at("shallowest_depth_meters").get<double>();
+    if (payload.contains("deepest_depth_meters")) {
+        item.deepest_depth_meters =
+            payload.at("deepest_depth_meters").get<double>();
+    } else {
+        item.deepest_depth_meters = std::nullopt;
+    }
+    if (payload.contains("shallowest_depth_meters")) {
+        item.shallowest_depth_meters =
+            payload.at("shallowest_depth_meters").get<double>();
+    } else {
+        item.shallowest_depth_meters = std::nullopt;
+    }
     return item;
 }
 

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <optional>
 #include <vector>
 
 namespace farsounder::history {
@@ -26,8 +27,8 @@ struct GriddedInwaterDetection {
     bool is_tide_corrected{};
     bool uploaded_to_cloud{};
     std::int32_t number_of_points{};
-    double deepest_depth_meters{};
-    double shallowest_depth_meters{};
+    std::optional<double> deepest_depth_meters;
+    std::optional<double> shallowest_depth_meters;
 };
 
 struct HistoryData {
