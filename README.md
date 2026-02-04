@@ -3,7 +3,7 @@
 This repository provides a C++ client to communicate with an
 Argos sonar.
 
->![NOTE]
+>[!NOTE]
 > This is still under active development and testing. But may serve as an example for
 > integration, beyond the lower level example in [sdk repo]().
 
