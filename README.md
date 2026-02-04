@@ -5,7 +5,7 @@ Argos sonar.
 
 >[!NOTE]
 > This is still under active development and testing. But may serve as an example for
-> integration, beyond the lower level example in [sdk repo]().
+> integration, beyond the lower level example in [sdk repo](https://github.com/farsounder/SDK-Integration-Examples).
 
 ## Build
 
