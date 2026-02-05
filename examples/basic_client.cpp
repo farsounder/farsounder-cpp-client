@@ -62,8 +62,7 @@ int main() {
                             message.squelchless_inwater_detector);
                std::println("System Type: {}",
                             static_cast<int>(message.system_type));
-               std::println("Field Of View: {}",
-                            static_cast<int>(message.fov));
+               std::println("Field Of View: {}", static_cast<int>(message.fov));
                std::println("Detect Bottom: {}", message.detect_bottom);
                std::println("");
            });

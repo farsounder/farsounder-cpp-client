@@ -117,7 +117,8 @@ RequestResult convert_result(const proto::nav_api::RequestResult& r) {
     return result;
 }
 
-SystemType convert_system_type(proto::nav_api::ProcessorSettings::SystemType t) {
+SystemType convert_system_type(
+    proto::nav_api::ProcessorSettings::SystemType t) {
     switch (t) {
     case proto::nav_api::ProcessorSettings::kFS500:
         return SystemType::kFS500;
@@ -299,10 +300,9 @@ SetFieldOfViewResponse set_field_of_view(const config::ClientConfig& config,
                                          FieldOfView fov) {
     proto::nav_api::SetFieldOfViewRequest request;
     request.set_fov(convert_fov_to_proto(fov));
-    auto proto_response =
-        send_request<proto::nav_api::SetFieldOfViewRequest,
-                     proto::nav_api::SetFieldOfViewResponse>(
-            config, config::ReqRepEndpoint::SetFieldOfView, request);
+    auto proto_response = send_request<proto::nav_api::SetFieldOfViewRequest,
+                                       proto::nav_api::SetFieldOfViewResponse>(
+        config, config::ReqRepEndpoint::SetFieldOfView, request);
 
     SetFieldOfViewResponse response;
     response.result = convert_result(proto_response.result());
@@ -311,8 +311,9 @@ SetFieldOfViewResponse set_field_of_view(const config::ClientConfig& config,
 
 std::future<SetFieldOfViewResponse> set_field_of_view_async(
     const config::ClientConfig& config, FieldOfView fov) {
-    return std::async(std::launch::async,
-                      [config, fov]() { return set_field_of_view(config, fov); });
+    return std::async(std::launch::async, [config, fov]() {
+        return set_field_of_view(config, fov);
+    });
 }
 
 SetBottomDetectionResponse set_bottom_detection(
@@ -331,11 +332,9 @@ SetBottomDetectionResponse set_bottom_detection(
 
 std::future<SetBottomDetectionResponse> set_bottom_detection_async(
     const config::ClientConfig& config, bool enable_bottom_detection) {
-    return std::async(std::launch::async,
-                      [config, enable_bottom_detection]() {
-                          return set_bottom_detection(config,
-                                                      enable_bottom_detection);
-                      });
+    return std::async(std::launch::async, [config, enable_bottom_detection]() {
+        return set_bottom_detection(config, enable_bottom_detection);
+    });
 }
 
 SetInWaterSquelchResponse set_inwater_squelch(
@@ -386,10 +385,9 @@ set_squelchless_inwater_detector_async(const config::ClientConfig& config,
 
 GetVesselInfoResponse get_vessel_info(const config::ClientConfig& config) {
     proto::nav_api::GetVesselInfoRequest request;
-    auto proto_response =
-        send_request<proto::nav_api::GetVesselInfoRequest,
-                     proto::nav_api::GetVesselInfoResponse>(
-            config, config::ReqRepEndpoint::GetVesselInfo, request);
+    auto proto_response = send_request<proto::nav_api::GetVesselInfoRequest,
+                                       proto::nav_api::GetVesselInfoResponse>(
+        config, config::ReqRepEndpoint::GetVesselInfo, request);
 
     GetVesselInfoResponse response;
     response.result = convert_result(proto_response.result());

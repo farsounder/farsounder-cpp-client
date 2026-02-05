@@ -9,8 +9,8 @@
 #include <stdexcept>
 #include <zmq.hpp>
 
-#include "proto/nav_api.pb.h"
 #include "proto/array.pb.h"
+#include "proto/nav_api.pb.h"
 
 namespace farsounder {
 namespace {
@@ -104,7 +104,8 @@ Timestamp convert_timestamp(const proto::time::Time& t) {
     return Timestamp{static_cast<double>(epoch) + t.millisecond() / 1000.0};
 }
 
-SystemType convert_system_type(proto::nav_api::ProcessorSettings::SystemType t) {
+SystemType convert_system_type(
+    proto::nav_api::ProcessorSettings::SystemType t) {
     switch (t) {
     case proto::nav_api::ProcessorSettings::kFS500:
         return SystemType::kFS500;
@@ -348,9 +349,8 @@ struct Subscriber::Impl {
                             msg.data(), static_cast<int>(msg.size()))) {
                         break;
                     }
-                    auto data =
-                        std::make_shared<HydrophoneData>(
-                            convert_hydrophone_data(proto_data));
+                    auto data = std::make_shared<HydrophoneData>(
+                        convert_hydrophone_data(proto_data));
                     if (pool) {
                         pool->enqueue(
                             [this, data]() { dispatch_message(*data); });

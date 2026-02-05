@@ -31,11 +31,11 @@ enum class ResultCode {
 
 enum class FieldOfView {
     // Argos-500 & Argos-1000 systems
-    k120d100m = 5,   // 120 degree sector out to 100 meters
-    k120d200m = 6,   // 120 degree sector out to 200 meters
-    k90d500m = 7,    // 90 degree sector out to 500 meters
+    k120d100m = 5,  // 120 degree sector out to 100 meters
+    k120d200m = 6,  // 120 degree sector out to 200 meters
+    k90d500m = 7,   // 90 degree sector out to 500 meters
     // Argos-1000 systems only
-    k60d1000m = 8,   // 60 degree sector out to 1000 meters
+    k60d1000m = 8,  // 60 degree sector out to 1000 meters
     // Argos-350 systems
     k90d100m = 9,
     k90d200m = 10,
@@ -101,7 +101,6 @@ struct SetSquelchlessInWaterDetectorResponse {
     RequestResult result;
 };
 
-
 struct VesselInfo {
     float draft{};        // Draft of the keel in meters
     float keel_offset{};  // Offset from keel to transducer center
@@ -111,7 +110,6 @@ struct GetVesselInfoResponse {
     RequestResult result;
     VesselInfo info;
 };
-
 
 struct Bin {
     std::int32_t hor_index{};
@@ -132,8 +130,8 @@ struct TargetData {
     std::string serial;
     std::optional<Heading> heading;
     std::optional<Position> position;
-    std::vector<Bin> bottom;           // Sea floor detections
-    std::vector<TargetGroup> groups;   // In-water target groups
+    std::vector<Bin> bottom;          // Sea floor detections
+    std::vector<TargetGroup> groups;  // In-water target groups
     double max_depth{};
     std::int32_t max_range_index{};
 };
