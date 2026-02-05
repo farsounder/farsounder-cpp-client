@@ -7,6 +7,7 @@
 #include "farsounder/config.hpp"
 #include "farsounder/requests.hpp"
 #include "farsounder/subscriber.hpp"
+#include "farsounder/types.hpp"
 
 namespace {
 std::atomic<bool> g_running{true};
@@ -15,11 +16,6 @@ void handle_sigint(int) {
     g_running = false;
 }
 }  // namespace
-
-template <typename T>
-int to_int(const T& value) {
-    return static_cast<int>(value);
-}
 
 int main() {
     std::println("Starting FarSounder example...");
@@ -38,27 +34,37 @@ int main() {
     auto sub = farsounder::subscribe(cfg);
 
     std::println("Registering callback for TargetData...");
-    sub.on("TargetData", [](const proto::nav_api::TargetData& message) {
+    sub.on("TargetData", [](const farsounder::TargetData& message) {
         std::println("*** Got a TargetData ***");
-        std::println("Targets: {}", message.groups_size());
-        std::println("Bins: {}", message.bottom_size());
+        std::println("Target groups: {}", message.groups.size());
+        std::println("Bottom bins: {}", message.bottom.size());
+        if (message.heading) {
+            std::println("Heading: {:.1f} deg", message.heading->degrees);
+        }
+        if (message.position) {
+            std::println("Position: {:.6f}, {:.6f}",
+                         message.position->latitude_degrees,
+                         message.position->longitude_degrees);
+        }
         std::println("");
     });
 
     std::println("Registering callback for ProcessorSettings...");
     sub.on("ProcessorSettings",
-           [](const proto::nav_api::ProcessorSettings& message) {
+           [](const farsounder::ProcessorSettings& message) {
                std::println("*** Got a ProcessorSettings ***");
-               std::println("Min Inwater Squelch: {}",
-                            message.min_inwater_squelch());
-               std::println("Max Inwater Squelch: {}",
-                            message.max_inwater_squelch());
-               std::println("Inwater Squelch: {}", message.inwater_squelch());
+               std::println("Min Inwater Squelch: {:.2f}",
+                            message.min_inwater_squelch);
+               std::println("Max Inwater Squelch: {:.2f}",
+                            message.max_inwater_squelch);
+               std::println("Inwater Squelch: {:.2f}", message.inwater_squelch);
                std::println("Squelchless Inwater Detector: {}",
-                            message.squelchless_inwater_detector());
-               std::println("System Type: {}", to_int(message.system_type()));
-               std::println("Field Of View: {}", to_int(message.fov()));
-               std::println("Detect Bottom: {}", message.detect_bottom());
+                            message.squelchless_inwater_detector);
+               std::println("System Type: {}",
+                            static_cast<int>(message.system_type));
+               std::println("Field Of View: {}",
+                            static_cast<int>(message.fov));
+               std::println("Detect Bottom: {}", message.detect_bottom);
                std::println("");
            });
 
@@ -66,7 +72,25 @@ int main() {
         std::println("*** Requesting processor settings ***");
         auto response = farsounder::requests::get_processor_settings(cfg);
         std::println("Settings result code: {}",
-                     to_int(response.result().code()));
+                     static_cast<int>(response.result.code));
+        if (response.result.code == farsounder::ResultCode::Success) {
+            std::println("Current FOV: {}",
+                         static_cast<int>(response.settings.fov));
+        }
+        std::println("");
+    } catch (const std::exception& ex) {
+        std::println("Request failed: {}", ex.what());
+    }
+
+    try {
+        std::println("*** Requesting vessel info ***");
+        auto response = farsounder::requests::get_vessel_info(cfg);
+        std::println("Vessel info result code: {}",
+                     static_cast<int>(response.result.code));
+        if (response.result.code == farsounder::ResultCode::Success) {
+            std::println("Draft: {:.2f} m", response.info.draft);
+            std::println("Keel offset: {:.2f} m", response.info.keel_offset);
+        }
         std::println("");
     } catch (const std::exception& ex) {
         std::println("Request failed: {}", ex.what());

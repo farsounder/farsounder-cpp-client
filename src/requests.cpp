@@ -2,12 +2,15 @@
 
 #include <cpr/cpr.h>
 
+#include <ctime>
 #include <future>
 #include <nlohmann/json.hpp>
 #include <optional>
 #include <stdexcept>
 #include <string>
 #include <zmq.hpp>
+
+#include "proto/nav_api.pb.h"
 
 namespace farsounder::requests {
 namespace {
@@ -61,6 +64,144 @@ Response send_request(const config::ClientConfig& cfg,
 
     return response;
 }
+
+// =============================================================================
+// Proto to wrapper type conversions
+// =============================================================================
+
+Timestamp convert_timestamp(const proto::time::Time& t) {
+    // Convert year/month/day/hour/minute/second/millisecond to epoch
+    // Note: This is a simplified conversion - real code should use proper
+    // calendar math
+    std::tm tm = {};
+    tm.tm_year = static_cast<int>(t.year()) - 1900;
+    tm.tm_mon = static_cast<int>(t.month()) - 1;
+    tm.tm_mday = static_cast<int>(t.day());
+    tm.tm_hour = static_cast<int>(t.hour());
+    tm.tm_min = static_cast<int>(t.minute());
+    tm.tm_sec = static_cast<int>(t.second());
+#ifdef _WIN32
+    auto epoch = _mkgmtime(&tm);
+#else
+    auto epoch = timegm(&tm);
+#endif
+    return Timestamp{static_cast<double>(epoch) + t.millisecond() / 1000.0};
+}
+
+ResultCode convert_result_code(proto::nav_api::RequestResult::ResultCode code) {
+    switch (code) {
+    case proto::nav_api::RequestResult::kSuccess:
+        return ResultCode::Success;
+    case proto::nav_api::RequestResult::kUnknownError:
+        return ResultCode::UnknownError;
+    case proto::nav_api::RequestResult::kOperationUnavailable:
+        return ResultCode::OperationUnavailable;
+    case proto::nav_api::RequestResult::kParameterOutOfRange:
+        return ResultCode::ParameterOutOfRange;
+    case proto::nav_api::RequestResult::kParameterMissing:
+        return ResultCode::ParameterMissing;
+    case proto::nav_api::RequestResult::kInvalidRequest:
+        return ResultCode::InvalidRequest;
+    default:
+        return ResultCode::UnknownError;
+    }
+}
+
+RequestResult convert_result(const proto::nav_api::RequestResult& r) {
+    RequestResult result;
+    if (r.has_time()) {
+        result.time = convert_timestamp(r.time());
+    }
+    result.code = convert_result_code(r.code());
+    result.detail = r.result_detail();
+    return result;
+}
+
+SystemType convert_system_type(proto::nav_api::ProcessorSettings::SystemType t) {
+    switch (t) {
+    case proto::nav_api::ProcessorSettings::kFS500:
+        return SystemType::kFS500;
+    case proto::nav_api::ProcessorSettings::kFS1000:
+        return SystemType::kFS1000;
+    case proto::nav_api::ProcessorSettings::kFS350:
+        return SystemType::kFS350;
+    default:
+        return SystemType::kFS500;
+    }
+}
+
+FieldOfView convert_fov(proto::nav_api::FieldOfView fov) {
+    switch (fov) {
+    case proto::nav_api::k120d100m:
+        return FieldOfView::k120d100m;
+    case proto::nav_api::k120d200m:
+        return FieldOfView::k120d200m;
+    case proto::nav_api::k90d500m:
+        return FieldOfView::k90d500m;
+    case proto::nav_api::k60d1000m:
+        return FieldOfView::k60d1000m;
+    case proto::nav_api::k90d100m:
+        return FieldOfView::k90d100m;
+    case proto::nav_api::k90d200m:
+        return FieldOfView::k90d200m;
+    case proto::nav_api::k90d350m:
+        return FieldOfView::k90d350m;
+    case proto::nav_api::kStandby:
+        return FieldOfView::kStandby;
+    default:
+        return FieldOfView::k90d500m;
+    }
+}
+
+proto::nav_api::FieldOfView convert_fov_to_proto(FieldOfView fov) {
+    switch (fov) {
+    case FieldOfView::k120d100m:
+        return proto::nav_api::k120d100m;
+    case FieldOfView::k120d200m:
+        return proto::nav_api::k120d200m;
+    case FieldOfView::k90d500m:
+        return proto::nav_api::k90d500m;
+    case FieldOfView::k60d1000m:
+        return proto::nav_api::k60d1000m;
+    case FieldOfView::k90d100m:
+        return proto::nav_api::k90d100m;
+    case FieldOfView::k90d200m:
+        return proto::nav_api::k90d200m;
+    case FieldOfView::k90d350m:
+        return proto::nav_api::k90d350m;
+    case FieldOfView::kStandby:
+        return proto::nav_api::kStandby;
+    default:
+        return proto::nav_api::k90d500m;
+    }
+}
+
+ProcessorSettings convert_processor_settings(
+    const proto::nav_api::ProcessorSettings& s) {
+    ProcessorSettings settings;
+    if (s.has_time()) {
+        settings.time = convert_timestamp(s.time());
+    }
+    settings.min_inwater_squelch = s.min_inwater_squelch();
+    settings.max_inwater_squelch = s.max_inwater_squelch();
+    settings.inwater_squelch = s.inwater_squelch();
+    settings.squelchless_inwater_detector = s.squelchless_inwater_detector();
+    settings.detect_bottom = s.detect_bottom();
+    settings.system_type = convert_system_type(s.system_type());
+    settings.fov = convert_fov(s.fov());
+    return settings;
+}
+
+VesselInfo convert_vessel_info(const proto::nav_api::VesselInfo& v) {
+    VesselInfo info;
+    info.draft = v.draft();
+    info.keel_offset = v.keel_offset();
+    return info;
+}
+
+// =============================================================================
+// History data parsing (REST/JSON)
+// =============================================================================
 
 history::GriddedBottomDetection parse_gridded_bottom_detection(
     const nlohmann::json& payload) {
@@ -130,102 +271,136 @@ std::string rest_base_url(const config::ClientConfig& cfg) {
 
 }  // namespace
 
-proto::nav_api::GetProcessorSettingsResponse get_processor_settings(
+// =============================================================================
+// Public API implementations
+// =============================================================================
+
+GetProcessorSettingsResponse get_processor_settings(
     const config::ClientConfig& config) {
     proto::nav_api::GetProcessorSettingsRequest request;
-    return send_request<proto::nav_api::GetProcessorSettingsRequest,
-                        proto::nav_api::GetProcessorSettingsResponse>(
-        config, config::ReqRepEndpoint::GetProcessorSettings, request);
+    auto proto_response =
+        send_request<proto::nav_api::GetProcessorSettingsRequest,
+                     proto::nav_api::GetProcessorSettingsResponse>(
+            config, config::ReqRepEndpoint::GetProcessorSettings, request);
+
+    GetProcessorSettingsResponse response;
+    response.result = convert_result(proto_response.result());
+    response.settings = convert_processor_settings(proto_response.settings());
+    return response;
 }
 
-std::future<proto::nav_api::GetProcessorSettingsResponse>
-get_processor_settings_async(const config::ClientConfig& config) {
+std::future<GetProcessorSettingsResponse> get_processor_settings_async(
+    const config::ClientConfig& config) {
     return std::async(std::launch::async,
-                      [&config]() { return get_processor_settings(config); });
+                      [config]() { return get_processor_settings(config); });
 }
 
-proto::nav_api::SetFieldOfViewResponse set_field_of_view(
-    const config::ClientConfig& config, proto::nav_api::FieldOfView fov) {
+SetFieldOfViewResponse set_field_of_view(const config::ClientConfig& config,
+                                         FieldOfView fov) {
     proto::nav_api::SetFieldOfViewRequest request;
-    request.set_fov(fov);
-    return send_request<proto::nav_api::SetFieldOfViewRequest,
-                        proto::nav_api::SetFieldOfViewResponse>(
-        config, config::ReqRepEndpoint::SetFieldOfView, request);
+    request.set_fov(convert_fov_to_proto(fov));
+    auto proto_response =
+        send_request<proto::nav_api::SetFieldOfViewRequest,
+                     proto::nav_api::SetFieldOfViewResponse>(
+            config, config::ReqRepEndpoint::SetFieldOfView, request);
+
+    SetFieldOfViewResponse response;
+    response.result = convert_result(proto_response.result());
+    return response;
 }
 
-std::future<proto::nav_api::SetFieldOfViewResponse> set_field_of_view_async(
-    const config::ClientConfig& config, proto::nav_api::FieldOfView fov) {
-    return std::async(std::launch::async, [&config, fov]() {
-        return set_field_of_view(config, fov);
-    });
+std::future<SetFieldOfViewResponse> set_field_of_view_async(
+    const config::ClientConfig& config, FieldOfView fov) {
+    return std::async(std::launch::async,
+                      [config, fov]() { return set_field_of_view(config, fov); });
 }
 
-proto::nav_api::SetBottomDetectionResponse set_bottom_detection(
+SetBottomDetectionResponse set_bottom_detection(
     const config::ClientConfig& config, bool enable_bottom_detection) {
     proto::nav_api::SetBottomDetectionRequest request;
     request.set_enable_bottom_detection(enable_bottom_detection);
-    return send_request<proto::nav_api::SetBottomDetectionRequest,
-                        proto::nav_api::SetBottomDetectionResponse>(
-        config, config::ReqRepEndpoint::SetBottomDetection, request);
+    auto proto_response =
+        send_request<proto::nav_api::SetBottomDetectionRequest,
+                     proto::nav_api::SetBottomDetectionResponse>(
+            config, config::ReqRepEndpoint::SetBottomDetection, request);
+
+    SetBottomDetectionResponse response;
+    response.result = convert_result(proto_response.result());
+    return response;
 }
 
-std::future<proto::nav_api::SetBottomDetectionResponse>
-set_bottom_detection_async(const config::ClientConfig& config,
-                           bool enable_bottom_detection) {
-    return std::async(std::launch::async, [&config, enable_bottom_detection]() {
-        return set_bottom_detection(config, enable_bottom_detection);
-    });
+std::future<SetBottomDetectionResponse> set_bottom_detection_async(
+    const config::ClientConfig& config, bool enable_bottom_detection) {
+    return std::async(std::launch::async,
+                      [config, enable_bottom_detection]() {
+                          return set_bottom_detection(config,
+                                                      enable_bottom_detection);
+                      });
 }
 
-proto::nav_api::SetInWaterSquelchResponse set_inwater_squelch(
+SetInWaterSquelchResponse set_inwater_squelch(
     const config::ClientConfig& config, float new_squelch_val) {
     proto::nav_api::SetInWaterSquelchRequest request;
     request.set_new_squelch_val(new_squelch_val);
-    return send_request<proto::nav_api::SetInWaterSquelchRequest,
-                        proto::nav_api::SetInWaterSquelchResponse>(
-        config, config::ReqRepEndpoint::SetInWaterSquelch, request);
+    auto proto_response =
+        send_request<proto::nav_api::SetInWaterSquelchRequest,
+                     proto::nav_api::SetInWaterSquelchResponse>(
+            config, config::ReqRepEndpoint::SetInWaterSquelch, request);
+
+    SetInWaterSquelchResponse response;
+    response.result = convert_result(proto_response.result());
+    return response;
 }
 
-std::future<proto::nav_api::SetInWaterSquelchResponse>
-set_inwater_squelch_async(const config::ClientConfig& config,
-                          float new_squelch_val) {
-    return std::async(std::launch::async, [&config, new_squelch_val]() {
+std::future<SetInWaterSquelchResponse> set_inwater_squelch_async(
+    const config::ClientConfig& config, float new_squelch_val) {
+    return std::async(std::launch::async, [config, new_squelch_val]() {
         return set_inwater_squelch(config, new_squelch_val);
     });
 }
 
-proto::nav_api::SetSquelchlessInWaterDetectorResponse
-set_squelchless_inwater_detector(const config::ClientConfig& config,
-                                 bool enable_squelchless_detection) {
+SetSquelchlessInWaterDetectorResponse set_squelchless_inwater_detector(
+    const config::ClientConfig& config, bool enable_squelchless_detection) {
     proto::nav_api::SetSquelchlessInWaterDetectorRequest request;
     request.set_enable_squelchless_detection(enable_squelchless_detection);
-    return send_request<proto::nav_api::SetSquelchlessInWaterDetectorRequest,
-                        proto::nav_api::SetSquelchlessInWaterDetectorResponse>(
-        config, config::ReqRepEndpoint::SetSquelchlessInWaterDetector, request);
+    auto proto_response =
+        send_request<proto::nav_api::SetSquelchlessInWaterDetectorRequest,
+                     proto::nav_api::SetSquelchlessInWaterDetectorResponse>(
+            config, config::ReqRepEndpoint::SetSquelchlessInWaterDetector,
+            request);
+
+    SetSquelchlessInWaterDetectorResponse response;
+    response.result = convert_result(proto_response.result());
+    return response;
 }
 
-std::future<proto::nav_api::SetSquelchlessInWaterDetectorResponse>
+std::future<SetSquelchlessInWaterDetectorResponse>
 set_squelchless_inwater_detector_async(const config::ClientConfig& config,
                                        bool enable_squelchless_detection) {
     return std::async(std::launch::async,
-                      [&config, enable_squelchless_detection]() {
+                      [config, enable_squelchless_detection]() {
                           return set_squelchless_inwater_detector(
                               config, enable_squelchless_detection);
                       });
 }
 
-proto::nav_api::GetVesselInfoResponse get_vessel_info(
-    const config::ClientConfig& config) {
+GetVesselInfoResponse get_vessel_info(const config::ClientConfig& config) {
     proto::nav_api::GetVesselInfoRequest request;
-    return send_request<proto::nav_api::GetVesselInfoRequest,
-                        proto::nav_api::GetVesselInfoResponse>(
-        config, config::ReqRepEndpoint::GetVesselInfo, request);
+    auto proto_response =
+        send_request<proto::nav_api::GetVesselInfoRequest,
+                     proto::nav_api::GetVesselInfoResponse>(
+            config, config::ReqRepEndpoint::GetVesselInfo, request);
+
+    GetVesselInfoResponse response;
+    response.result = convert_result(proto_response.result());
+    response.info = convert_vessel_info(proto_response.info());
+    return response;
 }
 
-std::future<proto::nav_api::GetVesselInfoResponse> get_vessel_info_async(
+std::future<GetVesselInfoResponse> get_vessel_info_async(
     const config::ClientConfig& config) {
     return std::async(std::launch::async,
-                      [&config]() { return get_vessel_info(config); });
+                      [config]() { return get_vessel_info(config); });
 }
 
 history::HistoryData get_history_data(const config::ClientConfig& config,

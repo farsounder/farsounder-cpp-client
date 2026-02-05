@@ -1,0 +1,43 @@
+@PACKAGE_INIT@
+
+# =============================================================================
+# FarSounder SDK CMake Package Config
+# =============================================================================
+# This package provides the farsounder::farsounder target.
+#
+# All dependencies are statically linked - no additional find_package() needed!
+#
+# Usage:
+#   find_package(farsounder REQUIRED)
+#   target_link_libraries(your_target PRIVATE farsounder::farsounder)
+# =============================================================================
+
+# Compute the installation prefix relative to this file
+get_filename_component(FARSOUNDER_CMAKE_DIR "${CMAKE_CURRENT_LIST_FILE}" PATH)
+get_filename_component(FARSOUNDER_PREFIX "${FARSOUNDER_CMAKE_DIR}/../../../" ABSOLUTE)
+
+# Create the imported target if it doesn't exist
+if(NOT TARGET farsounder::farsounder)
+  add_library(farsounder::farsounder STATIC IMPORTED)
+  
+  # Find the library file
+  find_library(FARSOUNDER_LIBRARY
+    NAMES farsounder
+    PATHS "${FARSOUNDER_PREFIX}/lib"
+    NO_DEFAULT_PATH
+  )
+  
+  if(NOT FARSOUNDER_LIBRARY)
+    message(FATAL_ERROR "farsounder library not found in ${FARSOUNDER_PREFIX}/lib")
+  endif()
+  
+  set_target_properties(farsounder::farsounder PROPERTIES
+    IMPORTED_LOCATION "${FARSOUNDER_LIBRARY}"
+    INTERFACE_INCLUDE_DIRECTORIES "${FARSOUNDER_PREFIX}/include"
+  )
+  
+  # Mark as found
+  set(farsounder_FOUND TRUE)
+endif()
+
+check_required_components(farsounder)
