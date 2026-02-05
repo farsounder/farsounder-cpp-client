@@ -1,5 +1,11 @@
 cmake_minimum_required(VERSION 3.16)
 
+# =============================================================================
+# MSVC Runtime - MUST be set before project() to affect all targets
+# =============================================================================
+cmake_policy(SET CMP0091 NEW)
+set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL")
+
 project(farsounder_sdk VERSION 1.0.0 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 23)
@@ -12,37 +18,43 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 # Options
 # =============================================================================
 option(FARSOUNDER_BUILD_EXAMPLES "Build examples" ON)
-option(FARSOUNDER_BUILD_SHARED "Build shared library (DLL)" OFF)
 
-if(FARSOUNDER_BUILD_SHARED)
-  set(BUILD_SHARED_LIBS ON CACHE BOOL "" FORCE)
-  set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
-else()
-  set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
-endif()
+# Always build as SHARED (DLL) - this embeds all dependencies into the DLL
+# so end users only need our DLL + headers
+set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
+
+# Force all dependencies to build as STATIC so they get baked into our DLL
+set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
 
 include(FetchContent)
 include(GNUInstallDirs)
 
 # =============================================================================
-# Dependencies (all PRIVATE - not exposed to consumers)
+# Dependencies (all built static, linked into our DLL)
 # =============================================================================
+
+# Abseil (protobuf dependency) - must use dynamic runtime
+set(ABSL_PROPAGATE_CXX_STD ON CACHE BOOL "" FORCE)
+set(ABSL_MSVC_STATIC_RUNTIME OFF CACHE BOOL "" FORCE)
 
 # Protobuf
 set(protobuf_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 set(protobuf_BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
 set(protobuf_MSVC_STATIC_RUNTIME OFF CACHE BOOL "" FORCE)
 set(protobuf_INSTALL OFF CACHE BOOL "" FORCE)
+set(protobuf_ABSL_PROVIDER "module" CACHE STRING "" FORCE)
 
 FetchContent_Declare(
   protobuf
   URL https://github.com/protocolbuffers/protobuf/archive/refs/tags/v33.5.zip
 )
 
-# ZeroMQ
+# ZeroMQ - force static
 set(ZMQ_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 set(ZMQ_BUILD_PERFORMANCE_TESTS OFF CACHE BOOL "" FORCE)
 set(ZMQ_BUILD_FRAMEWORK OFF CACHE BOOL "" FORCE)
+set(BUILD_STATIC ON CACHE BOOL "" FORCE)
+set(BUILD_SHARED OFF CACHE BOOL "" FORCE)
 
 FetchContent_Declare(
   zeromq
@@ -57,9 +69,11 @@ FetchContent_Declare(
   URL https://github.com/zeromq/cppzmq/archive/refs/tags/v4.11.0.zip
 )
 
-# CPR (HTTP client)
+# CPR (HTTP client) - force static
 set(CPR_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 set(CPR_BUILD_TESTS_SSL OFF CACHE BOOL "" FORCE)
+set(CPR_FORCE_USE_SYSTEM_CURL OFF CACHE BOOL "" FORCE)
+set(BUILD_CPR_TESTS OFF CACHE BOOL "" FORCE)
 
 FetchContent_Declare(
   cpr
@@ -103,9 +117,9 @@ target_link_libraries(farsounder_proto
 )
 
 # =============================================================================
-# Main SDK library
+# Main SDK library - SHARED (DLL) with all deps baked in
 # =============================================================================
-add_library(farsounder
+add_library(farsounder SHARED
   src/config.cpp
   src/requests.cpp
   src/subscriber.cpp
@@ -122,15 +136,22 @@ target_include_directories(farsounder
     "${protobuf_SOURCE_DIR}/src"
 )
 
-# All dependencies are PRIVATE - not exposed to consumers
+# All dependencies are PRIVATE - linked into the DLL, not exposed to consumers
 target_link_libraries(farsounder
   PRIVATE
     protobuf::libprotobuf
-    libzmq
-    cppzmq
+    libzmq-static
     cpr::cpr
     nlohmann_json::nlohmann_json
 )
+
+# cppzmq is header-only - just add include path (don't link, it pulls in libzmq shared)
+target_include_directories(farsounder PRIVATE ${cppzmq_SOURCE_DIR})
+
+# Windows-specific: link required system libraries for networking
+if(WIN32)
+  target_link_libraries(farsounder PRIVATE ws2_32 iphlpapi)
+endif()
 
 # Create alias for namespaced usage
 add_library(farsounder::farsounder ALIAS farsounder)
@@ -143,18 +164,18 @@ if(FARSOUNDER_BUILD_EXAMPLES)
 endif()
 
 # =============================================================================
-# Install rules (manual IMPORTED target - no install(EXPORT) to avoid dep issues)
+# Install rules
 # =============================================================================
 include(CMakePackageConfigHelpers)
 
-# Install the library files directly (no EXPORT)
+# Install the DLL to bin, import lib to lib
 install(TARGETS farsounder
-  ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+  ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}   # .lib (import library)
+  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}   # .so on Linux
+  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}   # .dll on Windows
 )
 
-# Install public headers (only our wrapper types, no proto)
+# Install public headers
 install(DIRECTORY include/
   DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
 )
@@ -166,7 +187,7 @@ write_basic_package_version_file(
   COMPATIBILITY SameMajorVersion
 )
 
-# Configure the package config (creates IMPORTED target manually)
+# Configure the package config
 configure_package_config_file(
   "${CMAKE_CURRENT_SOURCE_DIR}/cmake/farsounderConfig.cmake.in"
   "${CMAKE_CURRENT_BINARY_DIR}/farsounderConfig.cmake"

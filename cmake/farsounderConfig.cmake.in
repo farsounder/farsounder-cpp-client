@@ -5,7 +5,7 @@
 # =============================================================================
 # This package provides the farsounder::farsounder target.
 #
-# All dependencies are statically linked - no additional find_package() needed!
+# All dependencies are bundled in the DLL - no additional find_package() needed!
 #
 # Usage:
 #   find_package(farsounder REQUIRED)
@@ -14,29 +14,51 @@
 
 # Compute the installation prefix relative to this file
 get_filename_component(FARSOUNDER_CMAKE_DIR "${CMAKE_CURRENT_LIST_FILE}" PATH)
-get_filename_component(FARSOUNDER_PREFIX "${FARSOUNDER_CMAKE_DIR}/../../../" ABSOLUTE)
+get_filename_component(FARSOUNDER_PREFIX "${FARSOUNDER_CMAKE_DIR}/../../.." ABSOLUTE)
 
 # Create the imported target if it doesn't exist
 if(NOT TARGET farsounder::farsounder)
-  add_library(farsounder::farsounder STATIC IMPORTED)
+  add_library(farsounder::farsounder SHARED IMPORTED)
   
-  # Find the library file
-  find_library(FARSOUNDER_LIBRARY
+  # Find the import library (.lib on Windows)
+  find_library(FARSOUNDER_IMPLIB
     NAMES farsounder
     PATHS "${FARSOUNDER_PREFIX}/lib"
     NO_DEFAULT_PATH
   )
   
-  if(NOT FARSOUNDER_LIBRARY)
-    message(FATAL_ERROR "farsounder library not found in ${FARSOUNDER_PREFIX}/lib")
-  endif()
-  
-  set_target_properties(farsounder::farsounder PROPERTIES
-    IMPORTED_LOCATION "${FARSOUNDER_LIBRARY}"
-    INTERFACE_INCLUDE_DIRECTORIES "${FARSOUNDER_PREFIX}/include"
+  # Find the DLL (.dll on Windows, .so on Linux)
+  find_file(FARSOUNDER_DLL
+    NAMES farsounder.dll libfarsounder.so
+    PATHS "${FARSOUNDER_PREFIX}/bin" "${FARSOUNDER_PREFIX}/lib"
+    NO_DEFAULT_PATH
   )
   
-  # Mark as found
+  if(WIN32)
+    if(NOT FARSOUNDER_IMPLIB)
+      message(FATAL_ERROR "farsounder import library not found in ${FARSOUNDER_PREFIX}/lib")
+    endif()
+    if(NOT FARSOUNDER_DLL)
+      message(FATAL_ERROR "farsounder.dll not found in ${FARSOUNDER_PREFIX}/bin")
+    endif()
+    
+    set_target_properties(farsounder::farsounder PROPERTIES
+      IMPORTED_LOCATION "${FARSOUNDER_DLL}"
+      IMPORTED_IMPLIB "${FARSOUNDER_IMPLIB}"
+      INTERFACE_INCLUDE_DIRECTORIES "${FARSOUNDER_PREFIX}/include"
+    )
+  else()
+    # On Linux/Mac, the .so is both the library and runtime
+    if(NOT FARSOUNDER_DLL)
+      message(FATAL_ERROR "farsounder library not found")
+    endif()
+    
+    set_target_properties(farsounder::farsounder PROPERTIES
+      IMPORTED_LOCATION "${FARSOUNDER_DLL}"
+      INTERFACE_INCLUDE_DIRECTORIES "${FARSOUNDER_PREFIX}/include"
+    )
+  endif()
+  
   set(farsounder_FOUND TRUE)
 endif()
 
