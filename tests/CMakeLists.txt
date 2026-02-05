@@ -3,6 +3,7 @@ include(GoogleTest)
 add_executable(farsounder_tests
   requests_conversion_tests.cpp
   history_parse_tests.cpp
+  subscriber_conversion_tests.cpp
 )
 
 target_include_directories(farsounder_tests

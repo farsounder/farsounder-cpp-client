@@ -37,6 +37,26 @@ enum class SystemType {
     kFS350 = 3,   // Argos-350 sonar
 };
 
+enum class ArrayDataType {
+    kByte = 0,
+    kInt16 = 1,
+    kUInt16 = 2,
+    kInt32 = 3,
+    kUInt32 = 4,
+    kInt64 = 5,
+    kUInt64 = 6,
+    kFloat32 = 7,
+    kFloat64 = 8,
+    kComplex64 = 9,
+    kComplex128 = 10,
+    kBool = 11,
+};
+
+enum class ArrayDataOrder {
+    kRowMajor = 0,
+    kColumnMajor = 1,
+};
+
 struct Timestamp {
     double seconds_since_epoch{};
 };
@@ -129,10 +149,11 @@ struct HydrophoneData {
     std::string transmit_id;
     std::int32_t num_hor_phones{};
     std::int32_t num_ver_phones{};
-    // Raw timeseries data - flattened 2D array (channels x samples)
-    std::vector<float> raw_timeseries;
-    std::int32_t num_channels{};
-    std::int32_t num_samples{};
+    // Raw timeseries data - use ArrayData fields directly from proto.
+    std::vector<std::int32_t> dims;  // e.g. channels x samples
+    ArrayDataType type{ArrayDataType::kByte};
+    ArrayDataOrder order{ArrayDataOrder::kRowMajor};
+    std::string raw_timeseries;  // bytes, reinterpret using type/order
 };
 
 }  // namespace farsounder

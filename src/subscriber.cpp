@@ -11,6 +11,7 @@
 
 #include "proto/array.pb.h"
 #include "proto/nav_api.pb.h"
+#include "subscriber_internal.hpp"
 
 namespace farsounder {
 namespace {
@@ -83,9 +84,13 @@ std::string pubsub_address(const config::ClientConfig& cfg,
     return "tcp://" + cfg.host + ":" + std::to_string(port);
 }
 
+}  // namespace
+
 // =============================================================================
 // Proto to wrapper type conversions
 // =============================================================================
+
+namespace detail {
 
 Timestamp convert_timestamp(const proto::time::Time& t) {
     // Convert year/month/day/hour/minute/second/millisecond to epoch
@@ -141,6 +146,48 @@ FieldOfView convert_fov(proto::nav_api::FieldOfView fov) {
     }
 }
 
+ArrayDataType convert_array_type(proto::array::ArrayData::Type type) {
+    switch (type) {
+    case proto::array::ArrayData::BYTE:
+        return ArrayDataType::kByte;
+    case proto::array::ArrayData::INT16:
+        return ArrayDataType::kInt16;
+    case proto::array::ArrayData::UINT16:
+        return ArrayDataType::kUInt16;
+    case proto::array::ArrayData::INT32:
+        return ArrayDataType::kInt32;
+    case proto::array::ArrayData::UINT32:
+        return ArrayDataType::kUInt32;
+    case proto::array::ArrayData::INT64:
+        return ArrayDataType::kInt64;
+    case proto::array::ArrayData::UINT64:
+        return ArrayDataType::kUInt64;
+    case proto::array::ArrayData::FLOAT32:
+        return ArrayDataType::kFloat32;
+    case proto::array::ArrayData::FLOAT64:
+        return ArrayDataType::kFloat64;
+    case proto::array::ArrayData::COMPLEX64:
+        return ArrayDataType::kComplex64;
+    case proto::array::ArrayData::COMPLEX128:
+        return ArrayDataType::kComplex128;
+    case proto::array::ArrayData::BOOL:
+        return ArrayDataType::kBool;
+    default:
+        return ArrayDataType::kByte;
+    }
+}
+
+ArrayDataOrder convert_array_order(proto::array::ArrayData::Order order) {
+    switch (order) {
+    case proto::array::ArrayData::ROW_MAJOR:
+        return ArrayDataOrder::kRowMajor;
+    case proto::array::ArrayData::COLUMN_MAJOR:
+        return ArrayDataOrder::kColumnMajor;
+    default:
+        return ArrayDataOrder::kRowMajor;
+    }
+}
+
 Bin convert_bin(const proto::nav_api::Bin& b) {
     Bin bin;
     bin.hor_index = b.hor_index();
@@ -157,7 +204,7 @@ HydrophoneData convert_hydrophone_data(
     const proto::nav_api::HydrophoneData& h) {
     HydrophoneData data;
     if (h.has_time()) {
-        data.time = convert_timestamp(h.time());
+        data.time = detail::convert_timestamp(h.time());
     }
     data.serial = h.serial();
     data.transmit_id = h.transmit_id();
@@ -167,18 +214,18 @@ HydrophoneData convert_hydrophone_data(
     // Convert raw timeseries if present
     if (h.has_raw_timeseries()) {
         const auto& ts = h.raw_timeseries();
-        // dims[0] = channels, dims[1] = samples
-        if (ts.dims_size() >= 2) {
-            data.num_channels = ts.dims(0);
-            data.num_samples = ts.dims(1);
+        data.dims.reserve(static_cast<size_t>(ts.dims_size()));
+        for (int i = 0; i < ts.dims_size(); ++i) {
+            data.dims.push_back(ts.dims(i));
         }
-        // The data is stored as bytes - interpret based on type
-        // For now, we assume FLOAT32 type
-        if (ts.has_data() && ts.type() == proto::array::ArrayData::FLOAT32) {
-            const std::string& bytes = ts.data();
-            size_t num_floats = bytes.size() / sizeof(float);
-            data.raw_timeseries.resize(num_floats);
-            std::memcpy(data.raw_timeseries.data(), bytes.data(), bytes.size());
+        if (ts.has_type()) {
+            data.type = detail::convert_array_type(ts.type());
+        }
+        if (ts.has_order()) {
+            data.order = detail::convert_array_order(ts.order());
+        }
+        if (ts.has_data()) {
+            data.raw_timeseries = ts.data();
         }
     }
     return data;
@@ -187,7 +234,7 @@ HydrophoneData convert_hydrophone_data(
 TargetData convert_target_data(const proto::nav_api::TargetData& t) {
     TargetData data;
     if (t.has_time()) {
-        data.time = convert_timestamp(t.time());
+        data.time = detail::convert_timestamp(t.time());
     }
     data.serial = t.serial();
 
@@ -201,7 +248,7 @@ TargetData convert_target_data(const proto::nav_api::TargetData& t) {
     // Convert bottom bins
     data.bottom.reserve(static_cast<size_t>(t.bottom_size()));
     for (const auto& bin : t.bottom()) {
-        data.bottom.push_back(convert_bin(bin));
+        data.bottom.push_back(detail::convert_bin(bin));
     }
 
     // Convert target groups
@@ -210,7 +257,7 @@ TargetData convert_target_data(const proto::nav_api::TargetData& t) {
         TargetGroup tg;
         tg.bins.reserve(static_cast<size_t>(group.bins_size()));
         for (const auto& bin : group.bins()) {
-            tg.bins.push_back(convert_bin(bin));
+            tg.bins.push_back(detail::convert_bin(bin));
         }
         data.groups.push_back(std::move(tg));
     }
@@ -224,15 +271,15 @@ ProcessorSettings convert_processor_settings(
     const proto::nav_api::ProcessorSettings& s) {
     ProcessorSettings settings;
     if (s.has_time()) {
-        settings.time = convert_timestamp(s.time());
+        settings.time = detail::convert_timestamp(s.time());
     }
     settings.min_inwater_squelch = s.min_inwater_squelch();
     settings.max_inwater_squelch = s.max_inwater_squelch();
     settings.inwater_squelch = s.inwater_squelch();
     settings.squelchless_inwater_detector = s.squelchless_inwater_detector();
     settings.detect_bottom = s.detect_bottom();
-    settings.system_type = convert_system_type(s.system_type());
-    settings.fov = convert_fov(s.fov());
+    settings.system_type = detail::convert_system_type(s.system_type());
+    settings.fov = detail::convert_fov(s.fov());
     return settings;
 }
 
@@ -243,7 +290,7 @@ VesselInfo convert_vessel_info(const proto::nav_api::VesselInfo& v) {
     return info;
 }
 
-}  // namespace
+}  // namespace detail
 
 // =============================================================================
 // Subscriber implementation (PIMPL)
@@ -350,7 +397,7 @@ struct Subscriber::Impl {
                         break;
                     }
                     auto data = std::make_shared<HydrophoneData>(
-                        convert_hydrophone_data(proto_data));
+                        detail::convert_hydrophone_data(proto_data));
                     if (pool) {
                         pool->enqueue(
                             [this, data]() { dispatch_message(*data); });
@@ -366,7 +413,7 @@ struct Subscriber::Impl {
                         break;
                     }
                     auto data = std::make_shared<TargetData>(
-                        convert_target_data(proto_data));
+                        detail::convert_target_data(proto_data));
                     if (pool) {
                         pool->enqueue(
                             [this, data]() { dispatch_message(*data); });
@@ -382,7 +429,7 @@ struct Subscriber::Impl {
                         break;
                     }
                     auto data = std::make_shared<ProcessorSettings>(
-                        convert_processor_settings(proto_data));
+                        detail::convert_processor_settings(proto_data));
                     if (pool) {
                         pool->enqueue(
                             [this, data]() { dispatch_message(*data); });
@@ -398,7 +445,7 @@ struct Subscriber::Impl {
                         break;
                     }
                     auto data = std::make_shared<VesselInfo>(
-                        convert_vessel_info(proto_data));
+                        detail::convert_vessel_info(proto_data));
                     if (pool) {
                         pool->enqueue(
                             [this, data]() { dispatch_message(*data); });
