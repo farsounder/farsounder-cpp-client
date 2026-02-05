@@ -55,7 +55,8 @@ The CXX compiler identification is MSVC 19.44.35209.0
 ```
 
 ## TODO:
-- example server for testing without the SDK demo
+- example server for testing without the SDK demo running
+- tests --> make transport layer injectable for easier testing?
 - tag version
 - create example to test async stuff
 - docs
