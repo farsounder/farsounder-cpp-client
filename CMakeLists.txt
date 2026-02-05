@@ -6,7 +6,7 @@ cmake_minimum_required(VERSION 3.16)
 cmake_policy(SET CMP0091 NEW)
 set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL")
 
-project(farsounder_sdk VERSION 0.1.0 LANGUAGES CXX)
+project(farsounder_sdk VERSION 0.1.1 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
