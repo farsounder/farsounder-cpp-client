@@ -11,6 +11,7 @@
 #include <zmq.hpp>
 
 #include "proto/nav_api.pb.h"
+#include "requests_internal.hpp"
 
 namespace farsounder::requests {
 namespace {
@@ -65,9 +66,19 @@ Response send_request(const config::ClientConfig& cfg,
     return response;
 }
 
+std::string rest_base_url(const config::ClientConfig& cfg) {
+    auto port =
+        config::resolve_rest_port(cfg, config::RestEndpoint::GetHistoryData);
+    return "http://" + cfg.host + ":" + std::to_string(port);
+}
+
+}  // namespace
+
 // =============================================================================
 // Proto to wrapper type conversions
 // =============================================================================
+
+namespace detail {
 
 Timestamp convert_timestamp(const proto::time::Time& t) {
     // Convert year/month/day/hour/minute/second/millisecond to epoch
@@ -264,13 +275,7 @@ history::HistoryData parse_history_data(const nlohmann::json& payload) {
     return data;
 }
 
-std::string rest_base_url(const config::ClientConfig& cfg) {
-    auto port =
-        config::resolve_rest_port(cfg, config::RestEndpoint::GetHistoryData);
-    return "http://" + cfg.host + ":" + std::to_string(port);
-}
-
-}  // namespace
+}  // namespace detail
 
 // =============================================================================
 // Public API implementations
@@ -285,8 +290,9 @@ GetProcessorSettingsResponse get_processor_settings(
             config, config::ReqRepEndpoint::GetProcessorSettings, request);
 
     GetProcessorSettingsResponse response;
-    response.result = convert_result(proto_response.result());
-    response.settings = convert_processor_settings(proto_response.settings());
+    response.result = detail::convert_result(proto_response.result());
+    response.settings =
+        detail::convert_processor_settings(proto_response.settings());
     return response;
 }
 
@@ -299,13 +305,13 @@ std::future<GetProcessorSettingsResponse> get_processor_settings_async(
 SetFieldOfViewResponse set_field_of_view(const config::ClientConfig& config,
                                          FieldOfView fov) {
     proto::nav_api::SetFieldOfViewRequest request;
-    request.set_fov(convert_fov_to_proto(fov));
+    request.set_fov(detail::convert_fov_to_proto(fov));
     auto proto_response = send_request<proto::nav_api::SetFieldOfViewRequest,
                                        proto::nav_api::SetFieldOfViewResponse>(
         config, config::ReqRepEndpoint::SetFieldOfView, request);
 
     SetFieldOfViewResponse response;
-    response.result = convert_result(proto_response.result());
+    response.result = detail::convert_result(proto_response.result());
     return response;
 }
 
@@ -326,7 +332,7 @@ SetBottomDetectionResponse set_bottom_detection(
             config, config::ReqRepEndpoint::SetBottomDetection, request);
 
     SetBottomDetectionResponse response;
-    response.result = convert_result(proto_response.result());
+    response.result = detail::convert_result(proto_response.result());
     return response;
 }
 
@@ -347,7 +353,7 @@ SetInWaterSquelchResponse set_inwater_squelch(
             config, config::ReqRepEndpoint::SetInWaterSquelch, request);
 
     SetInWaterSquelchResponse response;
-    response.result = convert_result(proto_response.result());
+    response.result = detail::convert_result(proto_response.result());
     return response;
 }
 
@@ -369,7 +375,7 @@ SetSquelchlessInWaterDetectorResponse set_squelchless_inwater_detector(
             request);
 
     SetSquelchlessInWaterDetectorResponse response;
-    response.result = convert_result(proto_response.result());
+    response.result = detail::convert_result(proto_response.result());
     return response;
 }
 
@@ -390,8 +396,8 @@ GetVesselInfoResponse get_vessel_info(const config::ClientConfig& config) {
         config, config::ReqRepEndpoint::GetVesselInfo, request);
 
     GetVesselInfoResponse response;
-    response.result = convert_result(proto_response.result());
-    response.info = convert_vessel_info(proto_response.info());
+    response.result = detail::convert_result(proto_response.result());
+    response.info = detail::convert_vessel_info(proto_response.info());
     return response;
 }
 
@@ -437,7 +443,7 @@ history::HistoryData get_history_data(const config::ClientConfig& config,
     }
 
     auto payload = nlohmann::json::parse(response.text);
-    return parse_history_data(payload);
+    return detail::parse_history_data(payload);
 }
 
 }  // namespace farsounder::requests

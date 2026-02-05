@@ -18,6 +18,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 # Options
 # =============================================================================
 option(FARSOUNDER_BUILD_EXAMPLES "Build examples" ON)
+option(FARSOUNDER_BUILD_TESTS "Build tests" ON)
 
 # Always build as SHARED (DLL) - this embeds all dependencies into the DLL
 # so end users only need our DLL + headers
@@ -86,7 +87,18 @@ FetchContent_Declare(
   URL https://github.com/nlohmann/json/archive/refs/tags/v3.11.3.zip
 )
 
+if(FARSOUNDER_BUILD_TESTS)
+  set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+  FetchContent_Declare(
+    googletest
+    URL https://github.com/google/googletest/archive/refs/tags/v1.17.0.zip
+  )
+endif()
+
 FetchContent_MakeAvailable(protobuf zeromq cppzmq cpr nlohmann_json)
+if(FARSOUNDER_BUILD_TESTS)
+  FetchContent_MakeAvailable(googletest)
+endif()
 
 include(${protobuf_SOURCE_DIR}/cmake/protobuf-generate.cmake)
 
@@ -157,15 +169,21 @@ endif()
 add_library(farsounder::farsounder ALIAS farsounder)
 
 # =============================================================================
-# Examples
+# Examples + Tests - these can be disabled with options to cmake
+# eg:
+# cmake -S . -B build -DFARSOUNDER_BUILD_EXAMPLES=OFF
+# cmake -S . -B build -DFARSOUNDER_BUILD_TESTS=OFF
+# etc.
 # =============================================================================
 if(FARSOUNDER_BUILD_EXAMPLES)
   add_subdirectory(examples)
 endif()
 
-# =============================================================================
-# Install rules
-# =============================================================================
+if(FARSOUNDER_BUILD_TESTS)
+  enable_testing()
+  add_subdirectory(tests)
+endif()
+
 include(CMakePackageConfigHelpers)
 
 # Install the DLL to bin, import lib to lib

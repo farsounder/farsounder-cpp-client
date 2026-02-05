@@ -51,11 +51,28 @@ These are configured to be statically linked into the main DLL, so end users onl
 ## Example usage:
 There is an example in [basic_client.cpp](examples/basic_client.cpp).
 
+## Tests
+Configure and build with tests enabled:
+``` sh
+cmake -S . -B build -DFARSOUNDER_BUILD_TESTS=ON
+cmake --build build
+```
+
+Run tests:
+``` sh
+ctest --test-dir build --output-on-failure
+```
+
+On Windows (multi-config generators), specify a config:
+``` sh
+ctest --test-dir build -C Debug --output-on-failure
+```
+
 ## Development
 
 Autoformat with: 
 ```
-clang-format -i src/*.cpp include/farsounder/*.hpp examples/*.cpp
+clang-format -i src/*.cpp include/farsounder/*.hpp examples/*.cpp tests/*.cpp
 ```
 
 So far we've built on
