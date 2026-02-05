@@ -6,19 +6,6 @@
 #include <vector>
 
 namespace farsounder {
-/*
-NOTE(Heath): This basically wraps the protobuf messages. I'm
-not exposing them directly because it makes packaging
-easier. Obviously this introduces some overhead, and we'll
-need to keep in sync if the protobuf messages change (which they
-ideally won't - but we could add messages).
-
-I haven't figured out how to get cmake to let us generate
-an installable package because if we expose the protobuf headers
-we need to publically link against protobuf. The idea of wrapping it
-it to privately use it, and only expose the custom wrapper types
-instead.
-*/
 
 enum class ResultCode {
     Success = 0,
