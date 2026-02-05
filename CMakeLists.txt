@@ -199,3 +199,9 @@ install(FILES
   "${CMAKE_CURRENT_BINARY_DIR}/farsounderConfigVersion.cmake"
   DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/farsounder
 )
+
+# Install LICENSE to share folder
+install(FILES
+  "${CMAKE_CURRENT_SOURCE_DIR}/LICENSE"
+  DESTINATION ${CMAKE_INSTALL_DATADIR}/farsounder
+)

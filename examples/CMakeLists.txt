@@ -39,19 +39,29 @@ if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
   set(FARSOUNDER_STANDALONE TRUE)
 endif()
 
-# Build the example - just link to farsounder, no other deps needed!
+# Build the example and link to the built farsounder dll
 add_executable(farsounder_example basic_client.cpp)
 target_link_libraries(farsounder_example PRIVATE farsounder::farsounder)
 
-# Copy the DLL to the output directory for standalone builds
-if(FARSOUNDER_STANDALONE AND WIN32)
-  # Get the DLL location from the imported target
-  get_target_property(FARSOUNDER_DLL_LOCATION farsounder::farsounder IMPORTED_LOCATION)
-  
-  if(FARSOUNDER_DLL_LOCATION)
+# Copy the DLL to the output directory
+if(WIN32)
+  if(FARSOUNDER_STANDALONE)
+    # Standalone: get DLL from imported target
+    get_target_property(FARSOUNDER_DLL_LOCATION farsounder::farsounder IMPORTED_LOCATION)
+    
+    if(FARSOUNDER_DLL_LOCATION)
+      add_custom_command(TARGET farsounder_example POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+          "${FARSOUNDER_DLL_LOCATION}"
+          "$<TARGET_FILE_DIR:farsounder_example>"
+        COMMENT "Copying farsounder.dll to output directory"
+      )
+    endif()
+  else()
+    # Part of main build: use the target directly
     add_custom_command(TARGET farsounder_example POST_BUILD
       COMMAND ${CMAKE_COMMAND} -E copy_if_different
-        "${FARSOUNDER_DLL_LOCATION}"
+        "$<TARGET_FILE:farsounder>"
         "$<TARGET_FILE_DIR:farsounder_example>"
       COMMENT "Copying farsounder.dll to output directory"
     )

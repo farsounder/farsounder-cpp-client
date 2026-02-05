@@ -9,20 +9,23 @@ Argos sonar.
 
 ## Build the SDK
 
-For testing, build and link to the example client in [examples/basic_client.cpp]():
+For testing, build and link to the example client in [examples/basic_client.cpp](examples/basic_client.cpp):
 ``` sh
 cmake -S . -B build
 cmake --build build
 ```
+On Windows - this will build a dll in `build/Debug/farsounder.dll` and an exe
+in `build/examples/Debug/farsounder_example.exe`.
 
-Build the SDK package (headers, binary, and cmake config)
+Build the SDK package (headers, binary, and cmake config) for redist:
 ``` sh
 cmake -S . -B build
 cmake --build build --config Release
 cmake --install build --prefix C:/farsounder-sdk --config Release  # puts in C:/farsounder-sdk
 ```
 
-Build the example, linking against the built dll instead:
+Build the example, linking against the separately build dll instead of directly
+against the target:
 
 ``` sh
 cmake -S examples -B build-example -DCMAKE_PREFIX_PATH="C:/farsounder-sdk"
