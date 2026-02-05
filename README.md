@@ -5,7 +5,7 @@ Argos sonar.
 
 >[!NOTE]
 > This is still under active development and testing. But may serve as an example for
-> integration, beyond the lower level example that's given in [sdk repo](https://github.com/farsounder/SDK-Integration-Examples).
+> integration, beyond the lower level example that's given in [sdk repo](https://github.com/farsounder/SDK-Integration-Examples). At the moment the docs are the headers and the example in examples.
 
 ## Build the SDK
 
@@ -36,6 +36,18 @@ cmake --build build-example --config Release
 build-example/Release/farsounder_example.exe
 ```
 
+## Dependencies
+This project uses the following dependencies, all of which are fetched and built automatically via CMake FetchContent in the top-level CMakeLists.txt:
+
+- [protobuf](https://github.com/protocolbuffers/protobuf) v33.5 (parse/serialize messages)
+- [abseil-cpp](https://github.com/abseil/abseil-cpp) --> pulled in by protobuf
+- [zeromq/libzmq](https://github.com/zeromq/libzmq) v4.3.5 (sockets)
+- [cppzmq](https://github.com/zeromq/cppzmq) v4.11.0 (cpp bindings)
+- [cpr](https://github.com/libcpr/cpr) v1.11.0 (curl for http request)
+- [nlohmann/json](https://github.com/nlohmann/json) v3.11.3 (parse json)
+
+These are configured to be statically linked into the main DLL, so end users only need the built farsounder DLL and public headers for integration.
+
 ## Example usage:
 There is an example in [basic_client.cpp](examples/basic_client.cpp).
 
@@ -57,6 +69,5 @@ The CXX compiler identification is MSVC 19.44.35209.0
 ## TODO:
 - example server for testing without the SDK demo running
 - tests --> make transport layer injectable for easier testing?
-- tag version
-- create example to test async stuff
+- create example to test/demo async stuff
 - docs
