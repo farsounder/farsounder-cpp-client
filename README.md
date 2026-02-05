@@ -7,37 +7,31 @@ Argos sonar.
 > This is still under active development and testing. But may serve as an example for
 > integration, beyond the lower level example that's given in [sdk repo](https://github.com/farsounder/SDK-Integration-Examples).
 
-## Build
+## Build the SDK
 
-```sh
+For testing, build and link to the example client in [examples/basic_client.cpp]():
+``` sh
 cmake -S . -B build
 cmake --build build
 ```
 
-## Run example client:
-
-```sh
-./build/farsounder_example # (./build/Debug|Release/farsounder_example.exe on windows)
+Build the SDK package (headers, binary, and cmake config)
+``` sh
+cmake -S . -B build
+cmake --build build --config Release
+cmake --install build --prefix C:/farsounder-sdk --config Release  # puts in C:/farsounder-sdk
 ```
 
-## Include in a project
-1. Build the repo (or add as a subdir etc and build)
-2. Link against the farsounder target
-3. Include headers in include/
+Build the example, linking against the built dll instead:
 
-CMAKE example: In your CMakeLists.txt, you can add this repo to fetch from - or clone it manually into /vendor for example. Something like:
+``` sh
+cmake -S examples -B build-example -DCMAKE_PREFIX_PATH="C:/farsounder-sdk"
+cmake --build build-example --config Release
+```
 
 ```
-FetchContent_Declare(
-  farsounder
-  GIT_REPOSITORY <url>
-  GIT_TAG <tag/commit>
-)
-FetchContent_MakeAvailable(farsounder)
-
-target_link_libraries(<your_app> PRIVATE farsounder)
+build-example/Release/farsounder_example.exe
 ```
-Should get it fetched and built. When I tested that in standalone I still had to copy the the zmq lib next to the test exe, I'm sure the path could be updated instead. Same thing we're doing here in the last line of the `CMakeLists.txt` file.
 
 ## Example usage:
 There is an example in [basic_client.cpp](examples/basic_client.cpp).
@@ -49,7 +43,7 @@ Autoformat with:
 clang-format -i src/*.cpp include/farsounder/*.hpp examples/*.cpp
 ```
 
-So far we've built:
+So far we've built on
 
 On Windows 11:
 ```
@@ -57,14 +51,8 @@ Visual Studio 17 2022, Windows SDK version 10.0.26100.0 to target Windows 10.0.2
 The CXX compiler identification is MSVC 19.44.35209.0
 ```
 
-On WSL2 Ubuntu 24.04 w/ gcc/g++
-```
-The CXX compiler identification is GNU 13.3.0
-```
-
 ## TODO:
-- create built lib/dll instead
 - example server for testing without the SDK demo
 - tag version
 - create example to test async stuff
-- docs?
+- docs

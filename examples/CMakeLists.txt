@@ -7,7 +7,7 @@
 #   cmake -S . -B build
 #   cmake --build build
 #
-# BUILDING STANDALONE (after installing the SDK):
+# BUILDING STANDALONE (install and sdk binaries):
 #   1. Build and install the SDK:
 #      cmake -S . -B build
 #      cmake --build build --config Release
