@@ -9,6 +9,7 @@ namespace {
 using farsounder::ArrayDataOrder;
 using farsounder::ArrayDataType;
 using farsounder::FieldOfView;
+using farsounder::GridMode;
 using farsounder::SystemType;
 using farsounder::detail::convert_array_order;
 using farsounder::detail::convert_array_type;
@@ -154,6 +155,14 @@ TEST(SubscriberConversions, TargetDataConversionCopiesFields) {
     group_bin->set_depth(7.0f);
     group_bin->set_strength(8.0f);
 
+    auto* grid = proto_data.mutable_grid_description();
+    grid->set_mode(proto::grid_description::GridDescription::kFixed);
+    grid->add_hor_angles(1.0);
+    grid->add_hor_angles(-1.0);
+    grid->add_ver_angles(2.0);
+    grid->add_ver_angles(-2.0);
+    grid->set_max_range(123.0);
+
     const auto converted = convert_target_data(proto_data);
     EXPECT_EQ(converted.serial, "serial-2");
     ASSERT_TRUE(converted.heading.has_value());
@@ -166,6 +175,15 @@ TEST(SubscriberConversions, TargetDataConversionCopiesFields) {
     ASSERT_EQ(converted.groups.size(), 1u);
     ASSERT_EQ(converted.groups[0].bins.size(), 1u);
     EXPECT_EQ(converted.groups[0].bins[0].hor_index, 4);
+    ASSERT_TRUE(converted.grid_description.has_value());
+    EXPECT_EQ(converted.grid_description->mode, GridMode::kFixed);
+    ASSERT_EQ(converted.grid_description->hor_angles.size(), 2u);
+    EXPECT_DOUBLE_EQ(converted.grid_description->hor_angles[0], 1.0);
+    EXPECT_DOUBLE_EQ(converted.grid_description->hor_angles[1], -1.0);
+    ASSERT_EQ(converted.grid_description->ver_angles.size(), 2u);
+    EXPECT_DOUBLE_EQ(converted.grid_description->ver_angles[0], 2.0);
+    EXPECT_DOUBLE_EQ(converted.grid_description->ver_angles[1], -2.0);
+    EXPECT_DOUBLE_EQ(converted.grid_description->max_range, 123.0);
     EXPECT_DOUBLE_EQ(converted.max_depth, 55.0);
     EXPECT_EQ(converted.max_range_index, 7);
 }

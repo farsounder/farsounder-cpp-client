@@ -200,6 +200,26 @@ Bin convert_bin(const proto::nav_api::Bin& b) {
     return bin;
 }
 
+GridDescription convert_grid_description(
+    const proto::grid_description::GridDescription& g) {
+    GridDescription grid;
+    if (g.has_mode()) {
+        grid.mode = static_cast<GridMode>(g.mode());
+    }
+    grid.hor_angles.reserve(static_cast<size_t>(g.hor_angles_size()));
+    for (const auto angle : g.hor_angles()) {
+        grid.hor_angles.push_back(angle);
+    }
+    grid.ver_angles.reserve(static_cast<size_t>(g.ver_angles_size()));
+    for (const auto angle : g.ver_angles()) {
+        grid.ver_angles.push_back(angle);
+    }
+    if (g.has_max_range()) {
+        grid.max_range = g.max_range();
+    }
+    return grid;
+}
+
 HydrophoneData convert_hydrophone_data(
     const proto::nav_api::HydrophoneData& h) {
     HydrophoneData data;
@@ -262,6 +282,9 @@ TargetData convert_target_data(const proto::nav_api::TargetData& t) {
         data.groups.push_back(std::move(tg));
     }
 
+    if (t.has_grid_description()) {
+        data.grid_description = convert_grid_description(t.grid_description());
+    }
     data.max_depth = t.max_depth();
     data.max_range_index = t.max_range_index();
     return data;

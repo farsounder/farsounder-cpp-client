@@ -57,6 +57,10 @@ enum class ArrayDataOrder {
     kColumnMajor = 1,
 };
 
+enum class GridMode {
+    kFixed = 0,
+};
+
 struct Timestamp {
     double seconds_since_epoch{};
 };
@@ -132,6 +136,13 @@ struct TargetGroup {
     std::vector<Bin> bins;
 };
 
+struct GridDescription {
+    GridMode mode{GridMode::kFixed};
+    std::vector<double> hor_angles;  // degrees
+    std::vector<double> ver_angles;  // degrees
+    double max_range{};              // meters
+};
+
 struct TargetData {
     Timestamp time{};
     std::string serial;
@@ -139,6 +150,7 @@ struct TargetData {
     std::optional<Position> position;
     std::vector<Bin> bottom;          // Sea floor detections
     std::vector<TargetGroup> groups;  // In-water target groups
+    std::optional<GridDescription> grid_description;
     double max_depth{};
     std::int32_t max_range_index{};
 };

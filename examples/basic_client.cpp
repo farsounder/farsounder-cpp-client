@@ -48,6 +48,32 @@ int main() {
                       << message.position->latitude_degrees << ", "
                       << message.position->longitude_degrees << '\n';
         }
+        if (message.grid_description) {
+            std::cout << "Grid shape: "
+                      << message.grid_description->hor_angles.size() << " x "
+                      << message.grid_description->ver_angles.size() << '\n';
+            std::cout << "Grid max range: " << std::fixed
+                      << std::setprecision(1)
+                      << message.grid_description->max_range << " m" << '\n';
+        }
+        if (!message.groups.empty() && !message.groups.front().bins.empty()) {
+            const auto& bin = message.groups.front().bins.front();
+            std::cout << "First target bin: hor=" << bin.hor_index
+                      << " ver=" << bin.ver_index
+                      << " range=" << bin.range_index << " cross=" << std::fixed
+                      << std::setprecision(2) << bin.cross_range
+                      << " down=" << bin.down_range << " depth=" << bin.depth
+                      << " strength=" << bin.strength << '\n';
+        }
+        if (!message.bottom.empty()) {
+            const auto& bin = message.bottom.front();
+            std::cout << "First bottom bin: hor=" << bin.hor_index
+                      << " ver=" << bin.ver_index
+                      << " range=" << bin.range_index << " cross=" << std::fixed
+                      << std::setprecision(2) << bin.cross_range
+                      << " down=" << bin.down_range << " depth=" << bin.depth
+                      << " strength=" << bin.strength << '\n';
+        }
         std::cout << '\n';
     });
 
