@@ -56,11 +56,11 @@ int main() {
            [](const farsounder::ProcessorSettings& message) {
                std::cout << "*** Got a ProcessorSettings ***" << '\n';
                std::cout << "Min Inwater Squelch: " << std::fixed
-                         << std::setprecision(2)
-                         << message.min_inwater_squelch << '\n';
+                         << std::setprecision(2) << message.min_inwater_squelch
+                         << '\n';
                std::cout << "Max Inwater Squelch: " << std::fixed
-                         << std::setprecision(2)
-                         << message.max_inwater_squelch << '\n';
+                         << std::setprecision(2) << message.max_inwater_squelch
+                         << '\n';
                std::cout << "Inwater Squelch: " << std::fixed
                          << std::setprecision(2) << message.inwater_squelch
                          << '\n';
@@ -80,8 +80,8 @@ int main() {
         std::cout << "Settings result code: "
                   << static_cast<int>(response.result.code) << '\n';
         if (response.result.code == farsounder::ResultCode::Success) {
-            std::cout << "Current FOV: " << static_cast<int>(response.settings.fov)
-                      << '\n';
+            std::cout << "Current FOV: "
+                      << static_cast<int>(response.settings.fov) << '\n';
         }
         std::cout << '\n';
     } catch (const std::exception& ex) {
