@@ -6,9 +6,9 @@ cmake_minimum_required(VERSION 3.16)
 cmake_policy(SET CMP0091 NEW)
 set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL")
 
-project(farsounder_sdk VERSION 0.1.1 LANGUAGES CXX)
+project(farsounder_sdk VERSION 0.1.2 LANGUAGES CXX)
 
-set(CMAKE_CXX_STANDARD 23)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_POLICY_VERSION_MINIMUM 3.16)
@@ -107,7 +107,7 @@ include(${protobuf_SOURCE_DIR}/cmake/protobuf-generate.cmake)
 # =============================================================================
 file(GLOB PROTO_FILES "${CMAKE_CURRENT_SOURCE_DIR}/proto/*.proto")
 
-add_library(farsounder_proto OBJECT)
+add_library(farsounder_proto STATIC)
 target_sources(farsounder_proto PRIVATE ${PROTO_FILES})
 
 protobuf_generate(
@@ -135,7 +135,6 @@ add_library(farsounder SHARED
   src/config.cpp
   src/requests.cpp
   src/subscriber.cpp
-  $<TARGET_OBJECTS:farsounder_proto>
 )
 
 # Public include directories (only our headers, no proto)
@@ -148,9 +147,10 @@ target_include_directories(farsounder
     "${protobuf_SOURCE_DIR}/src"
 )
 
-# All dependencies are PRIVATE - linked into the DLL, not exposed to consumers
+# All dependencies are private - linked into the DLL, not exposed to consumers
 target_link_libraries(farsounder
   PRIVATE
+    farsounder_proto
     protobuf::libprotobuf
     libzmq-static
     cpr::cpr

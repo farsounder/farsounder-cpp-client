@@ -86,6 +86,5 @@ The CXX compiler identification is MSVC 19.44.35209.0
 ## TODO:
 - example server for testing without the SDK demo running
 - tests --> make transport layer injectable for easier testing?
-  - message conversion (especially hydrophone)
 - create example to test/demo async stuff
 - docs

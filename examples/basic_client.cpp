@@ -1,7 +1,8 @@
 #include <atomic>
 #include <chrono>
 #include <csignal>
-#include <print>
+#include <iomanip>
+#include <iostream>
 #include <thread>
 
 #include "farsounder/config.hpp"
@@ -18,10 +19,10 @@ void handle_sigint(int) {
 }  // namespace
 
 int main() {
-    std::println("Starting FarSounder example...");
+    std::cout << "Starting FarSounder example..." << '\n';
     std::signal(SIGINT, handle_sigint);
 
-    std::println("Building config...");
+    std::cout << "Building config..." << '\n';
     auto cfg = farsounder::config::build_config(
         "127.0.0.1",
         {
@@ -30,96 +31,104 @@ int main() {
         },
         {}, farsounder::config::CallbackExecutor::ThreadPool, 10.0);
 
-    std::println("Create subscriber with our config...");
+    std::cout << "Create subscriber with our config..." << '\n';
     auto sub = farsounder::subscribe(cfg);
 
-    std::println("Registering callback for TargetData...");
+    std::cout << "Registering callback for TargetData..." << '\n';
     sub.on("TargetData", [](const farsounder::TargetData& message) {
-        std::println("*** Got a TargetData ***");
-        std::println("Target groups: {}", message.groups.size());
-        std::println("Bottom bins: {}", message.bottom.size());
+        std::cout << "*** Got a TargetData ***" << '\n';
+        std::cout << "Target groups: " << message.groups.size() << '\n';
+        std::cout << "Bottom bins: " << message.bottom.size() << '\n';
         if (message.heading) {
-            std::println("Heading: {:.1f} deg", message.heading->degrees);
+            std::cout << "Heading: " << std::fixed << std::setprecision(1)
+                      << message.heading->degrees << " deg" << '\n';
         }
         if (message.position) {
-            std::println("Position: {:.6f}, {:.6f}",
-                         message.position->latitude_degrees,
-                         message.position->longitude_degrees);
+            std::cout << "Position: " << std::fixed << std::setprecision(6)
+                      << message.position->latitude_degrees << ", "
+                      << message.position->longitude_degrees << '\n';
         }
-        std::println("");
+        std::cout << '\n';
     });
 
-    std::println("Registering callback for ProcessorSettings...");
+    std::cout << "Registering callback for ProcessorSettings..." << '\n';
     sub.on("ProcessorSettings",
            [](const farsounder::ProcessorSettings& message) {
-               std::println("*** Got a ProcessorSettings ***");
-               std::println("Min Inwater Squelch: {:.2f}",
-                            message.min_inwater_squelch);
-               std::println("Max Inwater Squelch: {:.2f}",
-                            message.max_inwater_squelch);
-               std::println("Inwater Squelch: {:.2f}", message.inwater_squelch);
-               std::println("Squelchless Inwater Detector: {}",
-                            message.squelchless_inwater_detector);
-               std::println("System Type: {}",
-                            static_cast<int>(message.system_type));
-               std::println("Field Of View: {}", static_cast<int>(message.fov));
-               std::println("Detect Bottom: {}", message.detect_bottom);
-               std::println("");
+               std::cout << "*** Got a ProcessorSettings ***" << '\n';
+               std::cout << "Min Inwater Squelch: " << std::fixed
+                         << std::setprecision(2)
+                         << message.min_inwater_squelch << '\n';
+               std::cout << "Max Inwater Squelch: " << std::fixed
+                         << std::setprecision(2)
+                         << message.max_inwater_squelch << '\n';
+               std::cout << "Inwater Squelch: " << std::fixed
+                         << std::setprecision(2) << message.inwater_squelch
+                         << '\n';
+               std::cout << "Squelchless Inwater Detector: "
+                         << message.squelchless_inwater_detector << '\n';
+               std::cout << "System Type: "
+                         << static_cast<int>(message.system_type) << '\n';
+               std::cout << "Field Of View: " << static_cast<int>(message.fov)
+                         << '\n';
+               std::cout << "Detect Bottom: " << message.detect_bottom << '\n';
+               std::cout << '\n';
            });
 
     try {
-        std::println("*** Requesting processor settings ***");
+        std::cout << "*** Requesting processor settings ***" << '\n';
         auto response = farsounder::requests::get_processor_settings(cfg);
-        std::println("Settings result code: {}",
-                     static_cast<int>(response.result.code));
+        std::cout << "Settings result code: "
+                  << static_cast<int>(response.result.code) << '\n';
         if (response.result.code == farsounder::ResultCode::Success) {
-            std::println("Current FOV: {}",
-                         static_cast<int>(response.settings.fov));
+            std::cout << "Current FOV: " << static_cast<int>(response.settings.fov)
+                      << '\n';
         }
-        std::println("");
+        std::cout << '\n';
     } catch (const std::exception& ex) {
-        std::println("Request failed: {}", ex.what());
+        std::cout << "Request failed: " << ex.what() << '\n';
     }
 
     try {
-        std::println("*** Requesting vessel info ***");
+        std::cout << "*** Requesting vessel info ***" << '\n';
         auto response = farsounder::requests::get_vessel_info(cfg);
-        std::println("Vessel info result code: {}",
-                     static_cast<int>(response.result.code));
+        std::cout << "Vessel info result code: "
+                  << static_cast<int>(response.result.code) << '\n';
         if (response.result.code == farsounder::ResultCode::Success) {
-            std::println("Draft: {:.2f} m", response.info.draft);
-            std::println("Keel offset: {:.2f} m", response.info.keel_offset);
+            std::cout << "Draft: " << std::fixed << std::setprecision(2)
+                      << response.info.draft << " m" << '\n';
+            std::cout << "Keel offset: " << std::fixed << std::setprecision(2)
+                      << response.info.keel_offset << " m" << '\n';
         }
-        std::println("");
+        std::cout << '\n';
     } catch (const std::exception& ex) {
-        std::println("Request failed: {}", ex.what());
+        std::cout << "Request failed: " << ex.what() << '\n';
     }
 
     try {
-        std::println("*** Requesting history data ***");
+        std::cout << "*** Requesting history data ***" << '\n';
         auto history = farsounder::requests::get_history_data(
             cfg,
             // if you are playing back the Patience Island Survey dataset
             // these coordinates will have data
             41.6538, -71.3712, 500.0);
-        std::println("History bottom detections: {}",
-                     history.gridded_bottom_detections.size());
-        std::println("History inwater detections: {}",
-                     history.gridded_inwater_detections.size());
-        std::println("");
+        std::cout << "History bottom detections: "
+                  << history.gridded_bottom_detections.size() << '\n';
+        std::cout << "History inwater detections: "
+                  << history.gridded_inwater_detections.size() << '\n';
+        std::cout << '\n';
     } catch (const std::exception& ex) {
-        std::println("Request failed: {}", ex.what());
+        std::cout << "Request failed: " << ex.what() << '\n';
     }
 
-    std::println("*** Running receive loop - press Ctrl+C to exit ***");
+    std::cout << "*** Running receive loop - press Ctrl+C to exit ***" << '\n';
     sub.start();
 
     while (g_running) {
         std::this_thread::sleep_for(std::chrono::milliseconds(200));
     }
-    std::println("Stopping subscriber...");
+    std::cout << "Stopping subscriber..." << '\n';
     sub.stop();
 
-    std::println("Done!");
+    std::cout << "Done!" << '\n';
     return 0;
 }

@@ -16,6 +16,7 @@ target_include_directories(farsounder_tests
 target_link_libraries(farsounder_tests
   PRIVATE
     farsounder
+    farsounder_proto
     GTest::gtest
     GTest::gtest_main
     protobuf::libprotobuf
