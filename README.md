@@ -121,4 +121,5 @@ ctest --test-dir build -C Debug --output-on-failure
 - example server for testing without the SDK demo running
 - tests --> make transport layer injectable for easier testing?
 - create example to test/demo async stuff
+- github actions build / test
 - docs
