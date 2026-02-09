@@ -81,9 +81,6 @@ std::string rest_base_url(const config::ClientConfig& cfg) {
 namespace detail {
 
 Timestamp convert_timestamp(const proto::time::Time& t) {
-    // Convert year/month/day/hour/minute/second/millisecond to epoch
-    // Note: This is a simplified conversion - real code should use proper
-    // calendar math
     std::tm tm = {};
     tm.tm_year = static_cast<int>(t.year()) - 1900;
     tm.tm_mon = static_cast<int>(t.month()) - 1;

@@ -79,6 +79,20 @@ TEST(TimestampConversion, ConvertsEpochWithMilliseconds) {
     EXPECT_DOUBLE_EQ(converted.seconds_since_epoch, 0.5);
 }
 
+TEST(TimestampConversion, ConvertsDateTimeToEpoch) {
+    proto::time::Time time;
+    time.set_year(2026);
+    time.set_month(2);
+    time.set_day(9);
+    time.set_hour(15);
+    time.set_minute(42);
+    time.set_second(38);
+    time.set_millisecond(188);
+
+    const auto converted = convert_timestamp(time);
+    EXPECT_NEAR(converted.seconds_since_epoch, 1770651758.188, 1e-6);
+}
+
 TEST(RequestResultConversion, CopiesFields) {
     proto::nav_api::RequestResult result;
     result.set_code(proto::nav_api::RequestResult::kParameterOutOfRange);
