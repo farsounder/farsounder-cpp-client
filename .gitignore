@@ -1,5 +1,7 @@
 build
 build-example
+build-wsl
+build-example-wsl
 
 # Executables / artifacts
 *.exe

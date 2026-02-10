@@ -4,7 +4,9 @@ cmake_minimum_required(VERSION 3.16)
 # MSVC Runtime - MUST be set before project() to affect all targets
 # =============================================================================
 cmake_policy(SET CMP0091 NEW)
-set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL")
+if(MSVC)
+  set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL")
+endif()
 
 project(farsounder_sdk VERSION 0.1.3 LANGUAGES CXX)
 
@@ -13,6 +15,12 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_POLICY_VERSION_MINIMUM 3.16)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+if(NOT MSVC)
+  # needed for ubuntu build of shared library
+  set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+  # turn off -Wdeprecated-declarations for protobuf
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-deprecated-declarations")
+endif()
 
 # =============================================================================
 # Options
@@ -48,6 +56,7 @@ set(protobuf_ABSL_PROVIDER "module" CACHE STRING "" FORCE)
 FetchContent_Declare(
   protobuf
   URL https://github.com/protocolbuffers/protobuf/archive/refs/tags/v33.5.zip
+  DOWNLOAD_EXTRACT_TIMESTAMP TRUE
 )
 
 # ZeroMQ - force static
@@ -60,6 +69,7 @@ set(BUILD_SHARED OFF CACHE BOOL "" FORCE)
 FetchContent_Declare(
   zeromq
   URL https://github.com/zeromq/libzmq/archive/refs/tags/v4.3.5.zip
+  DOWNLOAD_EXTRACT_TIMESTAMP TRUE
 )
 
 # cppzmq (header-only)
@@ -68,6 +78,7 @@ set(CPPZMQ_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 FetchContent_Declare(
   cppzmq
   URL https://github.com/zeromq/cppzmq/archive/refs/tags/v4.11.0.zip
+  DOWNLOAD_EXTRACT_TIMESTAMP TRUE
 )
 
 # CPR (HTTP client) - force static
@@ -79,12 +90,14 @@ set(BUILD_CPR_TESTS OFF CACHE BOOL "" FORCE)
 FetchContent_Declare(
   cpr
   URL https://github.com/libcpr/cpr/archive/refs/tags/1.11.0.zip
+  DOWNLOAD_EXTRACT_TIMESTAMP TRUE
 )
 
 # nlohmann_json (header-only)
 FetchContent_Declare(
   nlohmann_json
   URL https://github.com/nlohmann/json/archive/refs/tags/v3.11.3.zip
+  DOWNLOAD_EXTRACT_TIMESTAMP TRUE
 )
 
 if(FARSOUNDER_BUILD_TESTS)
@@ -92,6 +105,7 @@ if(FARSOUNDER_BUILD_TESTS)
   FetchContent_Declare(
     googletest
     URL https://github.com/google/googletest/archive/refs/tags/v1.17.0.zip
+    DOWNLOAD_EXTRACT_TIMESTAMP TRUE
   )
 endif()
 
@@ -106,6 +120,8 @@ include(${protobuf_SOURCE_DIR}/cmake/protobuf-generate.cmake)
 # Proto library (internal, compiled into farsounder)
 # =============================================================================
 file(GLOB PROTO_FILES "${CMAKE_CURRENT_SOURCE_DIR}/proto/*.proto")
+
+file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/generated/proto")
 
 add_library(farsounder_proto STATIC)
 target_sources(farsounder_proto PRIVATE ${PROTO_FILES})
