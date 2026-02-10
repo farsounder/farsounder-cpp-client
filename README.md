@@ -100,6 +100,17 @@ Visual Studio 17 2022, Windows SDK version 10.0.26100.0 to target Windows 10.0.2
 The CXX compiler identification is MSVC 19.44.35209.0
 ```
 
+Ubuntu 24.04:
+```
+CMAKE_BUILD_TYPE:STRING=Release
+CMAKE_CXX_COMPILER:FILEPATH=/usr/bin/c++
+CMAKE_CXX_COMPILER_AR:FILEPATH=/usr/bin/gcc-ar-13
+CMAKE_CXX_COMPILER_RANLIB:FILEPATH=/usr/bin/gcc-ranlib-13
+CMAKE_C_COMPILER:FILEPATH=/usr/bin/cc
+CMAKE_C_COMPILER_AR:FILEPATH=/usr/bin/gcc-ar-13
+CMAKE_C_COMPILER_RANLIB:FILEPATH=/usr/bin/gcc-ranlib-13
+```
+
 ### Tests
 Configure and build with tests enabled:
 ``` sh
