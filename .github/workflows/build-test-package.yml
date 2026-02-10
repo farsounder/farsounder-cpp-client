@@ -37,12 +37,12 @@ jobs:
       - name: Configure (Windows)
         if: runner.os == 'Windows'
         shell: pwsh
-        run: cmake -S . -B build -DFARSOUNDER_BUILD_TESTS=ON
+        run: cmake -S . -B build -DFARSOUNDER_BUILD_TESTS=ON -DFARSOUNDER_BUILD_EXAMPLES=OFF
 
       - name: Configure (Ubuntu)
         if: runner.os == 'Linux'
         shell: bash
-        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DFARSOUNDER_BUILD_TESTS=ON
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DFARSOUNDER_BUILD_TESTS=ON -DFARSOUNDER_BUILD_EXAMPLES=OFF
 
       - name: Build (Windows)
         if: runner.os == 'Windows'
@@ -91,11 +91,11 @@ jobs:
         shell: bash
         run: |
           find "$GITHUB_WORKSPACE/stage" -maxdepth 5 -print
-          test -f "$GITHUB_WORKSPACE/stage/lib/libfarsounder.so"
-          test -d "$GITHUB_WORKSPACE/stage/include/farsounder"
-          test -f "$GITHUB_WORKSPACE/stage/lib/cmake/farsounder/farsounderConfig.cmake"
-          test -f "$GITHUB_WORKSPACE/stage/lib/cmake/farsounder/farsounderConfigVersion.cmake"
-          test -f "$GITHUB_WORKSPACE/stage/share/farsounder/LICENSE"
+          test -f "$GITHUB_WORKSPACE/stage/lib/libfarsounder.so" || { echo 'ERROR: Expected library not found: $GITHUB_WORKSPACE/stage/lib/libfarsounder.so'; exit 1; }
+          test -d "$GITHUB_WORKSPACE/stage/include/farsounder" || { echo 'ERROR: Expected include directory not found: $GITHUB_WORKSPACE/stage/include/farsounder'; exit 1; }
+          test -f "$GITHUB_WORKSPACE/stage/lib/cmake/farsounder/farsounderConfig.cmake" || { echo 'ERROR: Expected CMake config not found: $GITHUB_WORKSPACE/stage/lib/cmake/farsounder/farsounderConfig.cmake'; exit 1; }
+          test -f "$GITHUB_WORKSPACE/stage/lib/cmake/farsounder/farsounderConfigVersion.cmake" || { echo 'ERROR: Expected CMake config version file not found: $GITHUB_WORKSPACE/stage/lib/cmake/farsounder/farsounderConfigVersion.cmake'; exit 1; }
+          test -f "$GITHUB_WORKSPACE/stage/share/farsounder/LICENSE" || { echo 'ERROR: Expected license file not found: $GITHUB_WORKSPACE/stage/share/farsounder/LICENSE'; exit 1; }
 
       - name: Upload package artifact
         uses: actions/upload-artifact@v4
