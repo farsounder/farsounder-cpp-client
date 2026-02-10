@@ -19,11 +19,9 @@ jobs:
           - name: windows-release
             os: windows-latest
             artifact_name: farsounder-sdk-windows-release
-            archive_path: farsounder-sdk-windows-release.zip
           - name: ubuntu-release
             os: ubuntu-24.04
             artifact_name: farsounder-sdk-ubuntu-release
-            archive_path: farsounder-sdk-ubuntu-release.tar.gz
 
     steps:
       - name: Checkout
@@ -99,20 +97,10 @@ jobs:
           test -f "$GITHUB_WORKSPACE/stage/lib/cmake/farsounder/farsounderConfigVersion.cmake"
           test -f "$GITHUB_WORKSPACE/stage/share/farsounder/LICENSE"
 
-      - name: Archive package (Windows)
-        if: runner.os == 'Windows'
-        shell: pwsh
-        run: Compress-Archive -Path "$env:GITHUB_WORKSPACE/stage/*" -DestinationPath "$env:GITHUB_WORKSPACE/${{ matrix.archive_path }}"
-
-      - name: Archive package (Ubuntu)
-        if: runner.os == 'Linux'
-        shell: bash
-        run: tar -C "$GITHUB_WORKSPACE/stage" -czf "$GITHUB_WORKSPACE/${{ matrix.archive_path }}" .
-
       - name: Upload package artifact
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.artifact_name }}
-          path: ${{ matrix.archive_path }}
+          path: stage
           if-no-files-found: error
           retention-days: 14
