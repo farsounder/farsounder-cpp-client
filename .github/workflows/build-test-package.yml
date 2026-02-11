@@ -1,0 +1,106 @@
+name: Build Test Package
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build-test-package:
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: windows-release
+            os: windows-latest
+            artifact_name: farsounder-sdk-windows-release
+          - name: ubuntu-release
+            os: ubuntu-24.04
+            artifact_name: farsounder-sdk-ubuntu-release
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Linux build dependencies
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential cmake libssl-dev pkg-config
+
+      - name: Configure (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: cmake -S . -B build -DFARSOUNDER_BUILD_TESTS=ON -DFARSOUNDER_BUILD_EXAMPLES=OFF
+
+      - name: Configure (Ubuntu)
+        if: runner.os == 'Linux'
+        shell: bash
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DFARSOUNDER_BUILD_TESTS=ON -DFARSOUNDER_BUILD_EXAMPLES=OFF
+
+      - name: Build (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: cmake --build build --config Release --parallel 2
+
+      - name: Build (Ubuntu)
+        if: runner.os == 'Linux'
+        shell: bash
+        run: cmake --build build --parallel 2
+
+      - name: Test (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: ctest --test-dir build -C Release --output-on-failure
+
+      - name: Test (Ubuntu)
+        if: runner.os == 'Linux'
+        shell: bash
+        run: ctest --test-dir build --output-on-failure
+
+      - name: Install (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: cmake --install build --config Release --prefix "$env:GITHUB_WORKSPACE/stage"
+
+      - name: Install (Ubuntu)
+        if: runner.os == 'Linux'
+        shell: bash
+        run: cmake --install build --prefix "$GITHUB_WORKSPACE/stage"
+
+      - name: Validate package contents (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          Get-ChildItem "$env:GITHUB_WORKSPACE/stage" -Recurse | Select-Object FullName
+          if (-not (Test-Path "$env:GITHUB_WORKSPACE/stage/bin/farsounder.dll")) { throw "Missing stage/bin/farsounder.dll" }
+          if (-not (Test-Path "$env:GITHUB_WORKSPACE/stage/lib/farsounder.lib")) { throw "Missing stage/lib/farsounder.lib" }
+          if (-not (Test-Path "$env:GITHUB_WORKSPACE/stage/include/farsounder")) { throw "Missing stage/include/farsounder" }
+          if (-not (Test-Path "$env:GITHUB_WORKSPACE/stage/lib/cmake/farsounder/farsounderConfig.cmake")) { throw "Missing CMake package config" }
+          if (-not (Test-Path "$env:GITHUB_WORKSPACE/stage/lib/cmake/farsounder/farsounderConfigVersion.cmake")) { throw "Missing CMake package version file" }
+          if (-not (Test-Path "$env:GITHUB_WORKSPACE/stage/share/farsounder/LICENSE")) { throw "Missing LICENSE" }
+
+      - name: Validate package contents (Ubuntu)
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          find "$GITHUB_WORKSPACE/stage" -maxdepth 5 -print
+          test -f "$GITHUB_WORKSPACE/stage/lib/libfarsounder.so" || { echo 'ERROR: Expected library not found: $GITHUB_WORKSPACE/stage/lib/libfarsounder.so'; exit 1; }
+          test -d "$GITHUB_WORKSPACE/stage/include/farsounder" || { echo 'ERROR: Expected include directory not found: $GITHUB_WORKSPACE/stage/include/farsounder'; exit 1; }
+          test -f "$GITHUB_WORKSPACE/stage/lib/cmake/farsounder/farsounderConfig.cmake" || { echo 'ERROR: Expected CMake config not found: $GITHUB_WORKSPACE/stage/lib/cmake/farsounder/farsounderConfig.cmake'; exit 1; }
+          test -f "$GITHUB_WORKSPACE/stage/lib/cmake/farsounder/farsounderConfigVersion.cmake" || { echo 'ERROR: Expected CMake config version file not found: $GITHUB_WORKSPACE/stage/lib/cmake/farsounder/farsounderConfigVersion.cmake'; exit 1; }
+          test -f "$GITHUB_WORKSPACE/stage/share/farsounder/LICENSE" || { echo 'ERROR: Expected license file not found: $GITHUB_WORKSPACE/stage/share/farsounder/LICENSE'; exit 1; }
+
+      - name: Upload package artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: stage
+          if-no-files-found: error
+          retention-days: 14
