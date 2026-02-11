@@ -8,7 +8,7 @@ Argos sonar.
 > integration, beyond the lower level example that's given in [sdk repo](https://github.com/farsounder/SDK-Integration-Examples). At the moment the docs are the headers and the example in examples.
 
 ## Installing
-There's a 64 bit Windows MSVC version available so far.
+There's a 64 bit Windows MSVC version and an Ubuntu 24 GCC version so far.
 
 You can install by downloading the zip package from [releases](https://github.com/farsounder/farsounder-cpp-client/releases) and using the dll and headers in your project. There's an example of how to do this in [examples/CMakeLists.txt](examples/CMakeLists.txt) with `CMake`. With the pre-built package, start from step 2 (don't need to build the sdk) and point CMAKE_PREFIX_PATH at where you extracted the `farsounder-sdk` package. That file is a bit complicated to support building the example in both cases, in reality a simpler make file is possible - something like:
 
