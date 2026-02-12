@@ -9,11 +9,11 @@ Argos sonar.
 
 ## What is this?
 
-This is simple wrapper around the APIs that FarSounder exposes to access Argos sonar data. You can use the APIs directly (protobuf over zeromq or json over http) if you prefer. They are documented in the [sdk repo](https://github.com/farsounder/SDK-Integration-Examples).
+This is a simple wrapper around the APIs that FarSounder exposes to access Argos sonar data. You can use the APIs directly (protobuf over zeromq or json over http) if you prefer. They are documented in the [sdk repo](https://github.com/farsounder/SDK-Integration-Examples).
 
-The purpose of this project is to offer a simpler way to interface with Argos sonar and start getting data. The dependencies are abstracted away and some basic threading is implemented to handle receiving data, etc. For streaming data sources, a callback can registered that will either run in the context of the receive thread, or run on a thread pool (default). Simple get/set functions are exposed to make the request/reply endpoints easier to use ([example](examples/basic_client.cpp)).
+The purpose of this project is to offer a simpler way to interface with the Argos sonar and start getting data. The dependencies are abstracted away and some basic threading is implemented to handle receiving data, etc. For streaming data sources, a callback can be registered that will either run in the context of the receive thread, or run on a thread pool (default). Simple get/set functions are exposed to make the request/reply endpoints easier to use ([example](examples/basic_client.cpp)).
 
-This wrapper uses the zermq/protobuf api mostly - and only uses the http/json api for history data as it's not currently exposed via the zmq api.
+This wrapper uses the zermq/protobuf api mostly, but uses the http/json api for history data as it's not currently exposed via the zmq api.
 
 ## Installing
 There's a 64 bit Windows MSVC version and an Ubuntu 24 GCC version so far.
