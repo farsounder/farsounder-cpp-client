@@ -7,40 +7,20 @@ Argos sonar.
 > This is still under active development and testing. But may serve as an example for
 > integration, beyond the lower level example that's given in [sdk repo](https://github.com/farsounder/SDK-Integration-Examples). At the moment the docs are the headers and the example in examples.
 
+## What is this?
+
+This is simple wrapper around the APIs that FarSounder exposes to access Argos sonar data. You can use the APIs directly (protobuf over zeromq or json over http) if you prefer. They are documented in the [sdk repo](https://github.com/farsounder/SDK-Integration-Examples).
+
+The purpose of this project is to offer a simpler way to interface with Argos sonar and start getting data. The dependencies are abstracted away and some basic threading is implemented to handle receiving data, etc. For streaming data sources, a callback can registered that will either run in the context of the receive thread, or run on a thread pool (default). Simple get/set functions are exposed to make the request/reply endpoints easier to use ([example](examples/basic_client.cpp)).
+
+This wrapper uses the zermq/protobuf api mostly - and only uses the http/json api for history data as it's not currently exposed via the zmq api.
+
 ## Installing
 There's a 64 bit Windows MSVC version and an Ubuntu 24 GCC version so far.
 
-You can install by downloading the zip package from [releases](https://github.com/farsounder/farsounder-cpp-client/releases) and using the dll and headers in your project. There's an example of how to do this in [examples/CMakeLists.txt](examples/CMakeLists.txt) with `CMake`. With the pre-built package, start from step 2 (don't need to build the sdk) and point CMAKE_PREFIX_PATH at where you extracted the `farsounder-sdk` package. That file is a bit complicated to support building the example in both cases, in reality a simpler make file is possible - something like:
+You can install by downloading the zip package from [releases](https://github.com/farsounder/farsounder-cpp-client/releases) and using the dll and headers in your project. 
 
-``` cmake
-cmake_minimum_required(VERSION 3.16)
-
-project(farsounder_client_example LANGUAGES CXX)
-# Point to where you unpacked the SDK or use cmdline
-# argument -DFARSOUNDER_SDK_DIR=<path>
-set(FARSOUNDER_SDK_DIR "vendor/farsounder-sdk")
-
-set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_EXTENSIONS OFF)
-
-list(APPEND CMAKE_PREFIX_PATH ${FARSOUNDER_SDK_DIR})
-
-find_package(farsounder REQUIRED)
-
-add_executable(farsounder_client_example basic_client.cpp)
-target_link_libraries(farsounder_client_example PRIVATE farsounder::farsounder)
-
-if(WIN32)
-    # Copy farsounder.dll next to the executable
-    add_custom_command(TARGET farsounder_client_example POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different
-                $<TARGET_RUNTIME_DLLS:farsounder_client_example>
-                $<TARGET_FILE_DIR:farsounder_client_example>
-        COMMAND_EXPAND_LISTS
-    )
-endif()
-```
+A very minimal example of this using `CMake` to pull the package is avaiable here: https://github.com/farsounder/farsounder-cpp-client-example
 
 If you need another configuration / version / platform etc, you will need to build the sdk from source.
 
