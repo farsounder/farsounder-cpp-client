@@ -14,7 +14,7 @@ namespace {
 const std::string kDefaultHost = "127.0.0.1";
 const std::string kHelpFlag = "--help";
 // notes on running the client in WSL:
-// https://learn.microsoft.com/en-us/windows/wsl/networking#identify-ip-address (scenario 2) 
+// https://learn.microsoft.com/en-us/windows/wsl/networking#identify-ip-address
 std::atomic<bool> g_running{true};
 
 void handle_sigint(int) {
