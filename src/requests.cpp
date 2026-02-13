@@ -155,9 +155,10 @@ GetProcessorSettingsResponse get_processor_settings(
             config, config::ReqRepEndpoint::GetProcessorSettings, request);
 
     GetProcessorSettingsResponse response;
-    response.result = farsounder::detail::convert_result(proto_response.result());
-    response.settings =
-        farsounder::detail::convert_processor_settings(proto_response.settings());
+    response.result =
+        farsounder::detail::convert_result(proto_response.result());
+    response.settings = farsounder::detail::convert_processor_settings(
+        proto_response.settings());
     return response;
 }
 
@@ -176,7 +177,8 @@ SetFieldOfViewResponse set_field_of_view(const config::ClientConfig& config,
         config, config::ReqRepEndpoint::SetFieldOfView, request);
 
     SetFieldOfViewResponse response;
-    response.result = farsounder::detail::convert_result(proto_response.result());
+    response.result =
+        farsounder::detail::convert_result(proto_response.result());
     return response;
 }
 
@@ -197,7 +199,8 @@ SetBottomDetectionResponse set_bottom_detection(
             config, config::ReqRepEndpoint::SetBottomDetection, request);
 
     SetBottomDetectionResponse response;
-    response.result = farsounder::detail::convert_result(proto_response.result());
+    response.result =
+        farsounder::detail::convert_result(proto_response.result());
     return response;
 }
 
@@ -218,7 +221,8 @@ SetInWaterSquelchResponse set_inwater_squelch(
             config, config::ReqRepEndpoint::SetInWaterSquelch, request);
 
     SetInWaterSquelchResponse response;
-    response.result = farsounder::detail::convert_result(proto_response.result());
+    response.result =
+        farsounder::detail::convert_result(proto_response.result());
     return response;
 }
 
@@ -240,7 +244,8 @@ SetSquelchlessInWaterDetectorResponse set_squelchless_inwater_detector(
             request);
 
     SetSquelchlessInWaterDetectorResponse response;
-    response.result = farsounder::detail::convert_result(proto_response.result());
+    response.result =
+        farsounder::detail::convert_result(proto_response.result());
     return response;
 }
 
@@ -261,8 +266,10 @@ GetVesselInfoResponse get_vessel_info(const config::ClientConfig& config) {
         config, config::ReqRepEndpoint::GetVesselInfo, request);
 
     GetVesselInfoResponse response;
-    response.result = farsounder::detail::convert_result(proto_response.result());
-    response.info = farsounder::detail::convert_vessel_info(proto_response.info());
+    response.result =
+        farsounder::detail::convert_result(proto_response.result());
+    response.info =
+        farsounder::detail::convert_vessel_info(proto_response.info());
     return response;
 }
 

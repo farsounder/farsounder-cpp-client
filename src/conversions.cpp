@@ -1,7 +1,7 @@
-#include "conversions_internal.hpp"
-
 #include <ctime>
 #include <utility>
+
+#include "conversions_internal.hpp"
 
 namespace farsounder::detail {
 
@@ -184,7 +184,8 @@ GridDescription convert_grid_description(
     return grid;
 }
 
-HydrophoneData convert_hydrophone_data(const proto::nav_api::HydrophoneData& h) {
+HydrophoneData convert_hydrophone_data(
+    const proto::nav_api::HydrophoneData& h) {
     HydrophoneData data;
     if (h.has_time()) {
         data.time = convert_timestamp(h.time());
