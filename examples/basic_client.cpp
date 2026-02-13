@@ -14,7 +14,7 @@ namespace {
 const std::string kDefaultHost = "127.0.0.1";
 const std::string kHelpFlag = "--help";
 // notes on running the client in WSL:
-// https://learn.microsoft.com/en-us/windows/wsl/networking#identify-ip-address (scenario 2) 
+// https://learn.microsoft.com/en-us/windows/wsl/networking#identify-ip-address
 std::atomic<bool> g_running{true};
 
 void handle_sigint(int) {
@@ -22,19 +22,23 @@ void handle_sigint(int) {
 }
 }  // namespace
 
-int main(
-    int argc, char** argv
-) {
-
+int main(int argc, char** argv) {
     if (argc > 2 || (argc > 1 && std::string(argv[1]) == kHelpFlag)) {
         std::cout << "Usage: " << argv[0] << " [host]" << '\n';
-        std::cout << "  host: the host to connect to (default: " << kDefaultHost << ")" << std::endl;
-        std::cout << "  This should point at the machine running the" << std::endl
+        std::cout << "  host: the host to connect to (default: " << kDefaultHost
+                  << ")" << std::endl;
+        std::cout << "  This should point at the machine running the"
+                  << std::endl
                   << "  SonaSoft demo or SonaSoft nav software." << std::endl;
-        std::cout << "  On WSL, you can use the ip address of the WSL host." << std::endl;
-        std::cout << "  One way to get this ip is to run this inside the WSL terminal:" << std::endl;
+        std::cout << "  On WSL, you can use the ip address of the WSL host."
+                  << std::endl;
+        std::cout << "  One way to get this ip is to run this inside the WSL "
+                     "terminal:"
+                  << std::endl;
         std::cout << "    $ ip route | awk '/default/ {print $3}'" << std::endl;
-        std::cout << "  For example, if the ip address is 172.30.64.1, you can use:" << std::endl;
+        std::cout
+            << "  For example, if the ip address is 172.30.64.1, you can use:"
+            << std::endl;
         std::cout << "    " << argv[0] << " 172.30.64.1" << std::endl;
         return 1;
     }
