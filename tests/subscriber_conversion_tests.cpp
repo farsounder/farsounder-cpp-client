@@ -2,7 +2,7 @@
 
 #include <string>
 
-#include "subscriber_internal.hpp"
+#include "conversions_internal.hpp"
 
 namespace {
 
@@ -56,6 +56,46 @@ TEST(SubscriberConversions, EnumMappings) {
               ArrayDataOrder::kRowMajor);
     EXPECT_EQ(convert_array_order(proto::array::ArrayData::COLUMN_MAJOR),
               ArrayDataOrder::kColumnMajor);
+}
+
+TEST(SubscriberConversions, EnumMappingsUseDefaultsForUnknownValues) {
+    const auto unknown_system =
+        static_cast<proto::nav_api::ProcessorSettings::SystemType>(999);
+    const auto unknown_fov = static_cast<proto::nav_api::FieldOfView>(999);
+    const auto unknown_type = static_cast<proto::array::ArrayData::Type>(999);
+    const auto unknown_order = static_cast<proto::array::ArrayData::Order>(999);
+
+    EXPECT_EQ(convert_system_type(unknown_system), SystemType::kFS500);
+    EXPECT_EQ(convert_fov(unknown_fov), FieldOfView::k90d500m);
+    EXPECT_EQ(convert_array_type(unknown_type), ArrayDataType::kByte);
+    EXPECT_EQ(convert_array_order(unknown_order), ArrayDataOrder::kRowMajor);
+}
+
+TEST(SubscriberConversions, ArrayTypeMappingsCoverAllValues) {
+    EXPECT_EQ(convert_array_type(proto::array::ArrayData::BYTE),
+              ArrayDataType::kByte);
+    EXPECT_EQ(convert_array_type(proto::array::ArrayData::INT16),
+              ArrayDataType::kInt16);
+    EXPECT_EQ(convert_array_type(proto::array::ArrayData::UINT16),
+              ArrayDataType::kUInt16);
+    EXPECT_EQ(convert_array_type(proto::array::ArrayData::INT32),
+              ArrayDataType::kInt32);
+    EXPECT_EQ(convert_array_type(proto::array::ArrayData::UINT32),
+              ArrayDataType::kUInt32);
+    EXPECT_EQ(convert_array_type(proto::array::ArrayData::INT64),
+              ArrayDataType::kInt64);
+    EXPECT_EQ(convert_array_type(proto::array::ArrayData::UINT64),
+              ArrayDataType::kUInt64);
+    EXPECT_EQ(convert_array_type(proto::array::ArrayData::FLOAT32),
+              ArrayDataType::kFloat32);
+    EXPECT_EQ(convert_array_type(proto::array::ArrayData::FLOAT64),
+              ArrayDataType::kFloat64);
+    EXPECT_EQ(convert_array_type(proto::array::ArrayData::COMPLEX64),
+              ArrayDataType::kComplex64);
+    EXPECT_EQ(convert_array_type(proto::array::ArrayData::COMPLEX128),
+              ArrayDataType::kComplex128);
+    EXPECT_EQ(convert_array_type(proto::array::ArrayData::BOOL),
+              ArrayDataType::kBool);
 }
 
 TEST(SubscriberConversions, BinConversionCopiesFields) {
@@ -112,6 +152,22 @@ TEST(SubscriberConversions, HydrophoneDataConversionCopiesArrayData) {
     EXPECT_EQ(converted.type, ArrayDataType::kInt16);
     EXPECT_EQ(converted.order, ArrayDataOrder::kColumnMajor);
     EXPECT_EQ(converted.raw_timeseries, std::string("\x01\x02\x03\x04", 4));
+}
+
+TEST(SubscriberConversions, HydrophoneDataConversionHandlesMissingRawTimeseries) {
+    proto::nav_api::HydrophoneData proto_data;
+    proto_data.set_serial("serial-missing-array");
+    proto_data.set_transmit_id("tx-missing-array");
+    proto_data.set_num_hor_phones(1);
+    proto_data.set_num_ver_phones(2);
+
+    const auto converted = convert_hydrophone_data(proto_data);
+    EXPECT_EQ(converted.serial, "serial-missing-array");
+    EXPECT_EQ(converted.transmit_id, "tx-missing-array");
+    EXPECT_TRUE(converted.dims.empty());
+    EXPECT_EQ(converted.type, ArrayDataType::kByte);
+    EXPECT_EQ(converted.order, ArrayDataOrder::kRowMajor);
+    EXPECT_TRUE(converted.raw_timeseries.empty());
 }
 
 TEST(SubscriberConversions, TargetDataConversionCopiesFields) {
@@ -186,6 +242,23 @@ TEST(SubscriberConversions, TargetDataConversionCopiesFields) {
     EXPECT_DOUBLE_EQ(converted.grid_description->max_range, 123.0);
     EXPECT_DOUBLE_EQ(converted.max_depth, 55.0);
     EXPECT_EQ(converted.max_range_index, 7);
+}
+
+TEST(SubscriberConversions, TargetDataConversionHandlesMissingOptionalFields) {
+    proto::nav_api::TargetData proto_data;
+    proto_data.set_serial("serial-minimal");
+    proto_data.set_max_depth(10.0);
+    proto_data.set_max_range_index(3);
+
+    const auto converted = convert_target_data(proto_data);
+    EXPECT_EQ(converted.serial, "serial-minimal");
+    EXPECT_FALSE(converted.heading.has_value());
+    EXPECT_FALSE(converted.position.has_value());
+    EXPECT_TRUE(converted.bottom.empty());
+    EXPECT_TRUE(converted.groups.empty());
+    EXPECT_FALSE(converted.grid_description.has_value());
+    EXPECT_DOUBLE_EQ(converted.max_depth, 10.0);
+    EXPECT_EQ(converted.max_range_index, 3);
 }
 
 TEST(SubscriberConversions, ProcessorSettingsConversionCopiesFields) {

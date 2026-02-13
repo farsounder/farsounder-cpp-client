@@ -2,7 +2,6 @@
 
 #include <cpr/cpr.h>
 
-#include <ctime>
 #include <future>
 #include <nlohmann/json.hpp>
 #include <optional>
@@ -10,6 +9,7 @@
 #include <string>
 #include <zmq.hpp>
 
+#include "conversions_internal.hpp"
 #include "proto/nav_api.pb.h"
 #include "requests_internal.hpp"
 
@@ -74,139 +74,7 @@ std::string rest_base_url(const config::ClientConfig& cfg) {
 
 }  // namespace
 
-// =============================================================================
-// Proto to wrapper type conversions
-// =============================================================================
-
 namespace detail {
-
-Timestamp convert_timestamp(const proto::time::Time& t) {
-    std::tm tm = {};
-    tm.tm_year = static_cast<int>(t.year()) - 1900;
-    tm.tm_mon = static_cast<int>(t.month()) - 1;
-    tm.tm_mday = static_cast<int>(t.day());
-    tm.tm_hour = static_cast<int>(t.hour());
-    tm.tm_min = static_cast<int>(t.minute());
-    tm.tm_sec = static_cast<int>(t.second());
-#ifdef _WIN32
-    auto epoch = _mkgmtime(&tm);
-#else
-    auto epoch = timegm(&tm);
-#endif
-    return Timestamp{static_cast<double>(epoch) + t.millisecond() / 1000.0};
-}
-
-ResultCode convert_result_code(proto::nav_api::RequestResult::ResultCode code) {
-    switch (code) {
-    case proto::nav_api::RequestResult::kSuccess:
-        return ResultCode::Success;
-    case proto::nav_api::RequestResult::kUnknownError:
-        return ResultCode::UnknownError;
-    case proto::nav_api::RequestResult::kOperationUnavailable:
-        return ResultCode::OperationUnavailable;
-    case proto::nav_api::RequestResult::kParameterOutOfRange:
-        return ResultCode::ParameterOutOfRange;
-    case proto::nav_api::RequestResult::kParameterMissing:
-        return ResultCode::ParameterMissing;
-    case proto::nav_api::RequestResult::kInvalidRequest:
-        return ResultCode::InvalidRequest;
-    default:
-        return ResultCode::UnknownError;
-    }
-}
-
-RequestResult convert_result(const proto::nav_api::RequestResult& r) {
-    RequestResult result;
-    if (r.has_time()) {
-        result.time = convert_timestamp(r.time());
-    }
-    result.code = convert_result_code(r.code());
-    result.detail = r.result_detail();
-    return result;
-}
-
-SystemType convert_system_type(
-    proto::nav_api::ProcessorSettings::SystemType t) {
-    switch (t) {
-    case proto::nav_api::ProcessorSettings::kFS500:
-        return SystemType::kFS500;
-    case proto::nav_api::ProcessorSettings::kFS1000:
-        return SystemType::kFS1000;
-    case proto::nav_api::ProcessorSettings::kFS350:
-        return SystemType::kFS350;
-    default:
-        return SystemType::kFS500;
-    }
-}
-
-FieldOfView convert_fov(proto::nav_api::FieldOfView fov) {
-    switch (fov) {
-    case proto::nav_api::k120d100m:
-        return FieldOfView::k120d100m;
-    case proto::nav_api::k120d200m:
-        return FieldOfView::k120d200m;
-    case proto::nav_api::k90d500m:
-        return FieldOfView::k90d500m;
-    case proto::nav_api::k60d1000m:
-        return FieldOfView::k60d1000m;
-    case proto::nav_api::k90d100m:
-        return FieldOfView::k90d100m;
-    case proto::nav_api::k90d200m:
-        return FieldOfView::k90d200m;
-    case proto::nav_api::k90d350m:
-        return FieldOfView::k90d350m;
-    case proto::nav_api::kStandby:
-        return FieldOfView::kStandby;
-    default:
-        return FieldOfView::k90d500m;
-    }
-}
-
-proto::nav_api::FieldOfView convert_fov_to_proto(FieldOfView fov) {
-    switch (fov) {
-    case FieldOfView::k120d100m:
-        return proto::nav_api::k120d100m;
-    case FieldOfView::k120d200m:
-        return proto::nav_api::k120d200m;
-    case FieldOfView::k90d500m:
-        return proto::nav_api::k90d500m;
-    case FieldOfView::k60d1000m:
-        return proto::nav_api::k60d1000m;
-    case FieldOfView::k90d100m:
-        return proto::nav_api::k90d100m;
-    case FieldOfView::k90d200m:
-        return proto::nav_api::k90d200m;
-    case FieldOfView::k90d350m:
-        return proto::nav_api::k90d350m;
-    case FieldOfView::kStandby:
-        return proto::nav_api::kStandby;
-    default:
-        return proto::nav_api::k90d500m;
-    }
-}
-
-ProcessorSettings convert_processor_settings(
-    const proto::nav_api::ProcessorSettings& s) {
-    ProcessorSettings settings;
-    if (s.has_time()) {
-        settings.time = convert_timestamp(s.time());
-    }
-    settings.min_inwater_squelch = s.min_inwater_squelch();
-    settings.max_inwater_squelch = s.max_inwater_squelch();
-    settings.inwater_squelch = s.inwater_squelch();
-    settings.squelchless_inwater_detector = s.squelchless_inwater_detector();
-    settings.detect_bottom = s.detect_bottom();
-    settings.system_type = convert_system_type(s.system_type());
-    settings.fov = convert_fov(s.fov());
-    return settings;
-}
-
-VesselInfo convert_vessel_info(const proto::nav_api::VesselInfo& v) {
-    VesselInfo info;
-    info.draft = v.draft();
-    info.keel_offset = v.keel_offset();
-    return info;
-}
 
 // =============================================================================
 // History data parsing (REST/JSON)
@@ -287,9 +155,9 @@ GetProcessorSettingsResponse get_processor_settings(
             config, config::ReqRepEndpoint::GetProcessorSettings, request);
 
     GetProcessorSettingsResponse response;
-    response.result = detail::convert_result(proto_response.result());
+    response.result = farsounder::detail::convert_result(proto_response.result());
     response.settings =
-        detail::convert_processor_settings(proto_response.settings());
+        farsounder::detail::convert_processor_settings(proto_response.settings());
     return response;
 }
 
@@ -302,13 +170,13 @@ std::future<GetProcessorSettingsResponse> get_processor_settings_async(
 SetFieldOfViewResponse set_field_of_view(const config::ClientConfig& config,
                                          FieldOfView fov) {
     proto::nav_api::SetFieldOfViewRequest request;
-    request.set_fov(detail::convert_fov_to_proto(fov));
+    request.set_fov(farsounder::detail::convert_fov_to_proto(fov));
     auto proto_response = send_request<proto::nav_api::SetFieldOfViewRequest,
                                        proto::nav_api::SetFieldOfViewResponse>(
         config, config::ReqRepEndpoint::SetFieldOfView, request);
 
     SetFieldOfViewResponse response;
-    response.result = detail::convert_result(proto_response.result());
+    response.result = farsounder::detail::convert_result(proto_response.result());
     return response;
 }
 
@@ -329,7 +197,7 @@ SetBottomDetectionResponse set_bottom_detection(
             config, config::ReqRepEndpoint::SetBottomDetection, request);
 
     SetBottomDetectionResponse response;
-    response.result = detail::convert_result(proto_response.result());
+    response.result = farsounder::detail::convert_result(proto_response.result());
     return response;
 }
 
@@ -350,7 +218,7 @@ SetInWaterSquelchResponse set_inwater_squelch(
             config, config::ReqRepEndpoint::SetInWaterSquelch, request);
 
     SetInWaterSquelchResponse response;
-    response.result = detail::convert_result(proto_response.result());
+    response.result = farsounder::detail::convert_result(proto_response.result());
     return response;
 }
 
@@ -372,7 +240,7 @@ SetSquelchlessInWaterDetectorResponse set_squelchless_inwater_detector(
             request);
 
     SetSquelchlessInWaterDetectorResponse response;
-    response.result = detail::convert_result(proto_response.result());
+    response.result = farsounder::detail::convert_result(proto_response.result());
     return response;
 }
 
@@ -393,8 +261,8 @@ GetVesselInfoResponse get_vessel_info(const config::ClientConfig& config) {
         config, config::ReqRepEndpoint::GetVesselInfo, request);
 
     GetVesselInfoResponse response;
-    response.result = detail::convert_result(proto_response.result());
-    response.info = detail::convert_vessel_info(proto_response.info());
+    response.result = farsounder::detail::convert_result(proto_response.result());
+    response.info = farsounder::detail::convert_vessel_info(proto_response.info());
     return response;
 }
 

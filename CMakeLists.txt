@@ -149,6 +149,7 @@ target_link_libraries(farsounder_proto
 # =============================================================================
 add_library(farsounder SHARED
   src/config.cpp
+  src/conversions.cpp
   src/requests.cpp
   src/subscriber.cpp
 )

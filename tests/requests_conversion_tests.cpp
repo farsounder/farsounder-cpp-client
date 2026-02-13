@@ -1,19 +1,20 @@
 #include <gtest/gtest.h>
 
-#include "requests_internal.hpp"
+#include "conversions_internal.hpp"
 
 namespace {
 
 using farsounder::FieldOfView;
 using farsounder::ResultCode;
 using farsounder::SystemType;
-using farsounder::requests::detail::convert_fov;
-using farsounder::requests::detail::convert_fov_to_proto;
-using farsounder::requests::detail::convert_processor_settings;
-using farsounder::requests::detail::convert_result;
-using farsounder::requests::detail::convert_result_code;
-using farsounder::requests::detail::convert_system_type;
-using farsounder::requests::detail::convert_timestamp;
+using farsounder::detail::convert_fov;
+using farsounder::detail::convert_fov_to_proto;
+using farsounder::detail::convert_processor_settings;
+using farsounder::detail::convert_result;
+using farsounder::detail::convert_result_code;
+using farsounder::detail::convert_system_type;
+using farsounder::detail::convert_timestamp;
+using farsounder::detail::convert_vessel_info;
 
 TEST(ResultCodeMapping, MapsAllValues) {
     EXPECT_EQ(convert_result_code(proto::nav_api::RequestResult::kSuccess),
@@ -32,6 +33,12 @@ TEST(ResultCodeMapping, MapsAllValues) {
     EXPECT_EQ(
         convert_result_code(proto::nav_api::RequestResult::kInvalidRequest),
         ResultCode::InvalidRequest);
+}
+
+TEST(ResultCodeMapping, UnknownDefaultsToUnknownError) {
+    const auto unknown_code =
+        static_cast<proto::nav_api::RequestResult::ResultCode>(99);
+    EXPECT_EQ(convert_result_code(unknown_code), ResultCode::UnknownError);
 }
 
 TEST(FieldOfViewMapping, MapsAllValues) {
@@ -56,6 +63,14 @@ TEST(FieldOfViewMapping, RoundTripsThroughProto) {
     }
 }
 
+TEST(FieldOfViewMapping, UnknownDefaultsToNinetyDegreeFiveHundredMeters) {
+    const auto unknown_fov = static_cast<proto::nav_api::FieldOfView>(999);
+    EXPECT_EQ(convert_fov(unknown_fov), FieldOfView::k90d500m);
+
+    const auto unknown_wrapper = static_cast<FieldOfView>(999);
+    EXPECT_EQ(convert_fov_to_proto(unknown_wrapper), proto::nav_api::k90d500m);
+}
+
 TEST(SystemTypeMapping, MapsAllValues) {
     EXPECT_EQ(convert_system_type(proto::nav_api::ProcessorSettings::kFS500),
               SystemType::kFS500);
@@ -63,6 +78,12 @@ TEST(SystemTypeMapping, MapsAllValues) {
               SystemType::kFS1000);
     EXPECT_EQ(convert_system_type(proto::nav_api::ProcessorSettings::kFS350),
               SystemType::kFS350);
+}
+
+TEST(SystemTypeMapping, UnknownDefaultsToFs500) {
+    const auto unknown_system =
+        static_cast<proto::nav_api::ProcessorSettings::SystemType>(999);
+    EXPECT_EQ(convert_system_type(unknown_system), SystemType::kFS500);
 }
 
 TEST(TimestampConversion, ConvertsEpochWithMilliseconds) {
@@ -112,6 +133,17 @@ TEST(RequestResultConversion, CopiesFields) {
     EXPECT_DOUBLE_EQ(converted.time.seconds_since_epoch, 1.0);
 }
 
+TEST(RequestResultConversion, MissingTimeKeepsDefaultTimestamp) {
+    proto::nav_api::RequestResult result;
+    result.set_code(proto::nav_api::RequestResult::kSuccess);
+    result.set_result_detail("ok");
+
+    const auto converted = convert_result(result);
+    EXPECT_DOUBLE_EQ(converted.time.seconds_since_epoch, 0.0);
+    EXPECT_EQ(converted.code, ResultCode::Success);
+    EXPECT_EQ(converted.detail, "ok");
+}
+
 TEST(ProcessorSettingsConversion, CopiesAllFields) {
     proto::nav_api::ProcessorSettings settings;
     settings.set_min_inwater_squelch(1.0f);
@@ -140,6 +172,30 @@ TEST(ProcessorSettingsConversion, CopiesAllFields) {
     EXPECT_FALSE(converted.detect_bottom);
     EXPECT_EQ(converted.system_type, SystemType::kFS350);
     EXPECT_EQ(converted.fov, FieldOfView::k90d350m);
+}
+
+TEST(ProcessorSettingsConversion, MissingTimeKeepsDefaultTimestamp) {
+    proto::nav_api::ProcessorSettings settings;
+    settings.set_min_inwater_squelch(1.0f);
+    settings.set_max_inwater_squelch(2.0f);
+    settings.set_inwater_squelch(1.5f);
+    settings.set_squelchless_inwater_detector(false);
+    settings.set_detect_bottom(true);
+    settings.set_system_type(proto::nav_api::ProcessorSettings::kFS500);
+    settings.set_fov(proto::nav_api::k90d500m);
+
+    const auto converted = convert_processor_settings(settings);
+    EXPECT_DOUBLE_EQ(converted.time.seconds_since_epoch, 0.0);
+}
+
+TEST(VesselInfoConversion, CopiesFields) {
+    proto::nav_api::VesselInfo vessel_info;
+    vessel_info.set_draft(2.5f);
+    vessel_info.set_keel_offset(-0.5f);
+
+    const auto converted = convert_vessel_info(vessel_info);
+    EXPECT_FLOAT_EQ(converted.draft, 2.5f);
+    EXPECT_FLOAT_EQ(converted.keel_offset, -0.5f);
 }
 
 }  // namespace
