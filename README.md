@@ -20,7 +20,7 @@ There's a 64 bit Windows MSVC version and an Ubuntu 24 GCC version so far.
 
 You can install by downloading the zip package from [releases](https://github.com/farsounder/farsounder-cpp-client/releases) and using the dll and headers in your project. 
 
-A very minimal example of this using `CMake` to pull the package is avaiable here: https://github.com/farsounder/farsounder-cpp-client-example
+A very minimal example of this using `CMake` to pull the package is avaiable [here](https://github.com/farsounder/SDK-Integration-Examples/tree/master/using_sdk/cpp/simple_example)
 
 If you need another configuration / version / platform etc, you will need to build the sdk from source.
 
