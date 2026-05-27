@@ -25,6 +25,7 @@ GridDescription convert_grid_description(
     const proto::grid_description::GridDescription& g);
 HydrophoneData convert_hydrophone_data(const proto::nav_api::HydrophoneData& h);
 TargetData convert_target_data(const proto::nav_api::TargetData& t);
+RawTargetData convert_raw_target_data(const proto::nav_api::RawTargetData& t);
 
 ProcessorSettings convert_processor_settings(
     const proto::nav_api::ProcessorSettings& s);

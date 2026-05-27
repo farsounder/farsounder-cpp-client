@@ -11,6 +11,7 @@ namespace farsounder::config {
 enum class PubSubMessage {
     HydrophoneData,
     TargetData,
+    RawTargetData,
     ProcessorSettings,
     VesselInfo,
 };
