@@ -10,6 +10,7 @@ default_pubsub_ports() {
     return {
         {PubSubMessage::HydrophoneData, 61501},
         {PubSubMessage::TargetData, 61502},
+        {PubSubMessage::RawTargetData, 61505},
         {PubSubMessage::ProcessorSettings, 61503},
         {PubSubMessage::VesselInfo, 61504},
     };
@@ -37,6 +38,7 @@ std::unordered_map<std::string, PubSubMessage> pubsub_name_map() {
     return {
         {"HydrophoneData", PubSubMessage::HydrophoneData},
         {"TargetData", PubSubMessage::TargetData},
+        {"RawTargetData", PubSubMessage::RawTargetData},
         {"ProcessorSettings", PubSubMessage::ProcessorSettings},
         {"VesselInfo", PubSubMessage::VesselInfo},
     };
@@ -73,6 +75,8 @@ std::string_view to_string(PubSubMessage message) {
         return "HydrophoneData";
     case PubSubMessage::TargetData:
         return "TargetData";
+    case PubSubMessage::RawTargetData:
+        return "RawTargetData";
     case PubSubMessage::ProcessorSettings:
         return "ProcessorSettings";
     case PubSubMessage::VesselInfo:
@@ -184,9 +188,8 @@ ClientConfig build_config(
 
     if (subscribe.empty()) {
         subscribe = {
-            PubSubMessage::HydrophoneData,
-            PubSubMessage::TargetData,
-            PubSubMessage::ProcessorSettings,
+            PubSubMessage::HydrophoneData, PubSubMessage::TargetData,
+            PubSubMessage::RawTargetData,  PubSubMessage::ProcessorSettings,
             PubSubMessage::VesselInfo,
         };
     }

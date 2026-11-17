@@ -98,6 +98,7 @@ struct Subscriber::Impl {
     std::mutex callback_mutex;
     std::vector<HydrophoneCallback> hydrophone_callbacks;
     std::vector<TargetCallback> target_callbacks;
+    std::vector<RawTargetCallback> raw_target_callbacks;
     std::vector<ProcessorSettingsCallback> processor_settings_callbacks;
     std::vector<VesselInfoCallback> vessel_info_callbacks;
 
@@ -117,6 +118,17 @@ struct Subscriber::Impl {
         {
             std::lock_guard<std::mutex> lock(callback_mutex);
             callbacks = target_callbacks;
+        }
+        for (const auto& callback : callbacks) {
+            callback(data);
+        }
+    }
+
+    void dispatch_message(const RawTargetData& data) {
+        std::vector<RawTargetCallback> callbacks;
+        {
+            std::lock_guard<std::mutex> lock(callback_mutex);
+            callbacks = raw_target_callbacks;
         }
         for (const auto& callback : callbacks) {
             callback(data);
@@ -216,6 +228,22 @@ struct Subscriber::Impl {
                     }
                     break;
                 }
+                case config::PubSubMessage::RawTargetData: {
+                    proto::nav_api::RawTargetData proto_data;
+                    if (!proto_data.ParseFromArray(
+                            msg.data(), static_cast<int>(msg.size()))) {
+                        break;
+                    }
+                    auto data = std::make_shared<RawTargetData>(
+                        detail::convert_raw_target_data(proto_data));
+                    if (pool) {
+                        pool->enqueue(
+                            [this, data]() { dispatch_message(*data); });
+                    } else {
+                        dispatch_message(*data);
+                    }
+                    break;
+                }
                 case config::PubSubMessage::ProcessorSettings: {
                     proto::nav_api::ProcessorSettings proto_data;
                     if (!proto_data.ParseFromArray(
@@ -285,6 +313,15 @@ void Subscriber::on(config::PubSubMessage message, TargetCallback callback) {
     impl_->target_callbacks.push_back(std::move(callback));
 }
 
+void Subscriber::on(config::PubSubMessage message, RawTargetCallback callback) {
+    if (message != config::PubSubMessage::RawTargetData) {
+        throw std::invalid_argument(
+            "Callback type does not match pub-sub message");
+    }
+    std::lock_guard<std::mutex> lock(impl_->callback_mutex);
+    impl_->raw_target_callbacks.push_back(std::move(callback));
+}
+
 void Subscriber::on(config::PubSubMessage message,
                     ProcessorSettingsCallback callback) {
     if (message != config::PubSubMessage::ProcessorSettings) {
@@ -311,6 +348,11 @@ void Subscriber::on(const std::string& message_name,
 }
 
 void Subscriber::on(const std::string& message_name, TargetCallback callback) {
+    on(config::pubsub_from_name(message_name), std::move(callback));
+}
+
+void Subscriber::on(const std::string& message_name,
+                    RawTargetCallback callback) {
     on(config::pubsub_from_name(message_name), std::move(callback));
 }
 

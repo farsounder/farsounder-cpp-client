@@ -19,6 +19,7 @@ using farsounder::detail::convert_fov;
 using farsounder::detail::convert_fov_to_proto;
 using farsounder::detail::convert_hydrophone_data;
 using farsounder::detail::convert_processor_settings;
+using farsounder::detail::convert_raw_target_data;
 using farsounder::detail::convert_result;
 using farsounder::detail::convert_result_code;
 using farsounder::detail::convert_system_type;
@@ -393,6 +394,104 @@ TEST(TargetDataConversion, HandlesMissingOptionalFields) {
     EXPECT_FALSE(converted.grid_description.has_value());
     EXPECT_DOUBLE_EQ(converted.max_depth, 10.0);
     EXPECT_EQ(converted.max_range_index, 3);
+}
+
+TEST(RawTargetDataConversion, CopiesFields) {
+    proto::nav_api::RawTargetData proto_data;
+    proto_data.set_serial("serial-raw");
+    proto_data.set_max_depth(75.0);
+    proto_data.set_max_range_index(11);
+    proto_data.set_kernel_roll(1.25f);
+    proto_data.add_rolls(0.1f);
+    proto_data.add_rolls(-0.2f);
+    proto_data.add_tilts(0.3f);
+    proto_data.add_tilts(-0.4f);
+    proto_data.set_bin_length(0.75f);
+    proto_data.set_range_to_first_bin(8.5f);
+    auto* time = proto_data.mutable_time();
+    time->set_year(1970);
+    time->set_month(1);
+    time->set_day(1);
+    time->set_hour(0);
+    time->set_minute(0);
+    time->set_second(2);
+    time->set_millisecond(0);
+    auto* heading = proto_data.mutable_heading();
+    heading->set_heading(87.5);
+    auto* position = proto_data.mutable_position();
+    position->set_lat(41.0);
+    position->set_lon(-71.0);
+    auto* bottom = proto_data.add_bottom();
+    bottom->set_hor_index(1);
+    bottom->set_ver_index(2);
+    bottom->set_range_index(3);
+    bottom->set_cross_range(4.0f);
+    bottom->set_down_range(5.0f);
+    bottom->set_depth(6.0f);
+    bottom->set_strength(7.0f);
+    auto* target = proto_data.add_target();
+    target->set_hor_index(8);
+    target->set_ver_index(9);
+    target->set_range_index(10);
+    target->set_cross_range(11.0f);
+    target->set_down_range(12.0f);
+    target->set_depth(13.0f);
+    target->set_strength(14.0f);
+    auto* grid = proto_data.mutable_grid_description();
+    grid->set_mode(proto::grid_description::GridDescription::kFixed);
+    grid->add_hor_angles(3.0);
+    grid->add_ver_angles(-3.0);
+    grid->set_max_range(250.0);
+
+    const auto converted = convert_raw_target_data(proto_data);
+    EXPECT_EQ(converted.serial, "serial-raw");
+    ASSERT_TRUE(converted.heading.has_value());
+    EXPECT_DOUBLE_EQ(converted.heading->degrees, 87.5);
+    ASSERT_TRUE(converted.position.has_value());
+    EXPECT_DOUBLE_EQ(converted.position->latitude_degrees, 41.0);
+    EXPECT_DOUBLE_EQ(converted.position->longitude_degrees, -71.0);
+    ASSERT_EQ(converted.bottom.size(), 1u);
+    EXPECT_EQ(converted.bottom[0].hor_index, 1);
+    ASSERT_EQ(converted.target.size(), 1u);
+    EXPECT_EQ(converted.target[0].hor_index, 8);
+    ASSERT_TRUE(converted.grid_description.has_value());
+    EXPECT_EQ(converted.grid_description->mode, GridMode::kFixed);
+    ASSERT_EQ(converted.grid_description->hor_angles.size(), 1u);
+    EXPECT_DOUBLE_EQ(converted.grid_description->hor_angles[0], 3.0);
+    ASSERT_EQ(converted.grid_description->ver_angles.size(), 1u);
+    EXPECT_DOUBLE_EQ(converted.grid_description->ver_angles[0], -3.0);
+    EXPECT_DOUBLE_EQ(converted.grid_description->max_range, 250.0);
+    EXPECT_DOUBLE_EQ(converted.max_depth, 75.0);
+    EXPECT_EQ(converted.max_range_index, 11);
+    EXPECT_FLOAT_EQ(converted.kernel_roll, 1.25f);
+    ASSERT_EQ(converted.rolls.size(), 2u);
+    EXPECT_FLOAT_EQ(converted.rolls[0], 0.1f);
+    EXPECT_FLOAT_EQ(converted.rolls[1], -0.2f);
+    ASSERT_EQ(converted.tilts.size(), 2u);
+    EXPECT_FLOAT_EQ(converted.tilts[0], 0.3f);
+    EXPECT_FLOAT_EQ(converted.tilts[1], -0.4f);
+    EXPECT_FLOAT_EQ(converted.bin_length, 0.75f);
+    EXPECT_FLOAT_EQ(converted.range_to_first_bin, 8.5f);
+}
+
+TEST(RawTargetDataConversion, HandlesMissingOptionalFields) {
+    proto::nav_api::RawTargetData proto_data;
+    proto_data.set_serial("serial-raw-minimal");
+
+    const auto converted = convert_raw_target_data(proto_data);
+    EXPECT_EQ(converted.serial, "serial-raw-minimal");
+    EXPECT_FALSE(converted.heading.has_value());
+    EXPECT_FALSE(converted.position.has_value());
+    EXPECT_TRUE(converted.bottom.empty());
+    EXPECT_TRUE(converted.target.empty());
+    EXPECT_FALSE(converted.grid_description.has_value());
+    EXPECT_DOUBLE_EQ(converted.max_depth, 0.0);
+    EXPECT_EQ(converted.max_range_index, 0);
+    EXPECT_FLOAT_EQ(converted.kernel_roll, 0.0f);
+    EXPECT_TRUE(converted.rolls.empty());
+    EXPECT_TRUE(converted.tilts.empty());
+    EXPECT_FLOAT_EQ(converted.bin_length, 0.0f);
+    EXPECT_FLOAT_EQ(converted.range_to_first_bin, 0.0f);
 }
 
 TEST(BasicSanity, ConversionHelpersRemainUsable) {

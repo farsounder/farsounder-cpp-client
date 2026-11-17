@@ -183,6 +183,47 @@ message TargetData {
   optional int32 max_range_index = 10;
 }
 
+// RawTargetData exists for consumers who want to post-process or aggregate raw
+// detections on their own. For most use cases, e.g., displaying or using the same
+// information shown in SonaSoft, TargetData is a better fit.
+// Network details:
+// - ZeroMQ pattern: Publish-subscribe
+// - Default port: 61505
+message RawTargetData {
+  // Time stamp for when this data was collected.
+  optional time.Time time = 1;
+  // Unique string to identify the sonar this data came from.
+  optional string serial = 2;
+  // Heading and lat/lon position at time of data collection.
+  // Note that the position and heading displayed in the SonaSoft coning display
+  // may be updating a rate different from the ping rate. Further, this value
+  // is filtered if Settings -> System Settings -> "Filter heading and position"
+  // is checked.
+  optional nav_info.Heading heading = 3;
+  optional nav_info.Position position = 4;
+  // Bottom and target bins
+  repeated Bin bottom = 5;
+  repeated Bin target = 6;
+  optional grid_description.GridDescription grid_description = 7;
+  // Maximum depth of Bins contained in this dataset.
+  optional double max_depth = 8;
+  // max_range_index is the maximum number of bins that can occur along a
+  // horizontal look angle.
+  optional int32 max_range_index = 9;
+  // Rolls/tilts
+  // These are low pass filtered and interpolated to the same range indices
+  // as the sonar data. They may be empty or have a single value instead under
+  // error conditions (if there is no data from the sensor).
+  // Roll measurements are represented as residuals from a common reference.
+  // `kernel_roll` is the reference roll value, and each entry in `rolls` is
+  // the residual (roll - kernel_roll) at a given time/sample.
+  optional float kernel_roll = 10;
+  repeated float rolls = 11;
+  repeated float tilts = 12;
+  // Bin length / range to first bin (needed for mapping back to time)
+  optional float bin_length = 13; // meters
+  optional float range_to_first_bin = 14; // meters
+}
 
 // A Bin is an individual point in the water located relative to the sonar. All
 // targets (both sea bottom and in-water) are a collection of Bins. Used by the

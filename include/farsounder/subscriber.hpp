@@ -16,6 +16,7 @@ class Subscriber {
    public:
     using HydrophoneCallback = std::function<void(const HydrophoneData&)>;
     using TargetCallback = std::function<void(const TargetData&)>;
+    using RawTargetCallback = std::function<void(const RawTargetData&)>;
     using ProcessorSettingsCallback =
         std::function<void(const ProcessorSettings&)>;
     using VesselInfoCallback = std::function<void(const VesselInfo&)>;
@@ -31,12 +32,14 @@ class Subscriber {
     // Register callbacks by message type enum
     void on(config::PubSubMessage message, HydrophoneCallback callback);
     void on(config::PubSubMessage message, TargetCallback callback);
+    void on(config::PubSubMessage message, RawTargetCallback callback);
     void on(config::PubSubMessage message, ProcessorSettingsCallback callback);
     void on(config::PubSubMessage message, VesselInfoCallback callback);
 
     // Register callbacks by message name string
     void on(const std::string& message_name, HydrophoneCallback callback);
     void on(const std::string& message_name, TargetCallback callback);
+    void on(const std::string& message_name, RawTargetCallback callback);
     void on(const std::string& message_name,
             ProcessorSettingsCallback callback);
     void on(const std::string& message_name, VesselInfoCallback callback);

@@ -155,6 +155,23 @@ struct TargetData {
     std::int32_t max_range_index{};
 };
 
+struct RawTargetData {
+    Timestamp time{};
+    std::string serial;
+    std::optional<Heading> heading;
+    std::optional<Position> position;
+    std::vector<Bin> bottom;  // Sea floor detections
+    std::vector<Bin> target;  // In-water detections before grouping
+    std::optional<GridDescription> grid_description;
+    double max_depth{};
+    std::int32_t max_range_index{};
+    float kernel_roll{};
+    std::vector<float> rolls;
+    std::vector<float> tilts;
+    float bin_length{};
+    float range_to_first_bin{};
+};
+
 struct HydrophoneData {
     Timestamp time{};
     std::string serial;

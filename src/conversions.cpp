@@ -251,6 +251,59 @@ TargetData convert_target_data(const proto::nav_api::TargetData& t) {
     return data;
 }
 
+RawTargetData convert_raw_target_data(const proto::nav_api::RawTargetData& t) {
+    RawTargetData data;
+    if (t.has_time()) {
+        data.time = convert_timestamp(t.time());
+    }
+    data.serial = t.serial();
+
+    if (t.has_heading()) {
+        data.heading = Heading{t.heading().heading()};
+    }
+    if (t.has_position()) {
+        data.position = Position{t.position().lat(), t.position().lon()};
+    }
+
+    data.bottom.reserve(static_cast<size_t>(t.bottom_size()));
+    for (const auto& bin : t.bottom()) {
+        data.bottom.push_back(convert_bin(bin));
+    }
+
+    data.target.reserve(static_cast<size_t>(t.target_size()));
+    for (const auto& bin : t.target()) {
+        data.target.push_back(convert_bin(bin));
+    }
+
+    if (t.has_grid_description()) {
+        data.grid_description = convert_grid_description(t.grid_description());
+    }
+    data.max_depth = t.max_depth();
+    data.max_range_index = t.max_range_index();
+    if (t.has_kernel_roll()) {
+        data.kernel_roll = t.kernel_roll();
+    }
+
+    data.rolls.reserve(static_cast<size_t>(t.rolls_size()));
+    for (const auto roll : t.rolls()) {
+        data.rolls.push_back(roll);
+    }
+
+    data.tilts.reserve(static_cast<size_t>(t.tilts_size()));
+    for (const auto tilt : t.tilts()) {
+        data.tilts.push_back(tilt);
+    }
+
+    if (t.has_bin_length()) {
+        data.bin_length = t.bin_length();
+    }
+    if (t.has_range_to_first_bin()) {
+        data.range_to_first_bin = t.range_to_first_bin();
+    }
+
+    return data;
+}
+
 ProcessorSettings convert_processor_settings(
     const proto::nav_api::ProcessorSettings& s) {
     ProcessorSettings settings;
