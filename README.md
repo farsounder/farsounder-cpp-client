@@ -3,10 +3,6 @@
 This repository provides a C++ client to communicate with an
 Argos sonar.
 
->[!NOTE]
-> This is still under active development and testing. But may serve as an example for
-> integration, beyond the lower level example that's given in [sdk repo](https://github.com/farsounder/SDK-Integration-Examples). At the moment the docs are the headers and the example in examples.
-
 ## What is this?
 
 This is a simple wrapper around the APIs that FarSounder exposes to access Argos sonar data. You can use the APIs directly (protobuf over zeromq or json over http) if you prefer. They are documented in the [sdk repo](https://github.com/farsounder/SDK-Integration-Examples).
