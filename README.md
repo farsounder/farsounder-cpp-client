@@ -13,6 +13,8 @@ This is a simple wrapper around the APIs that FarSounder exposes to access Argos
 
 The purpose of this project is to offer a simpler way to interface with the Argos sonar and start getting data. The dependencies are abstracted away and some basic threading is implemented to handle receiving data, etc. For streaming data sources, a callback can be registered that will either run in the context of the receive thread, or run on a thread pool (default). Simple get/set functions are exposed to make the request/reply endpoints easier to use ([example](examples/basic_client.cpp)).
 
+Request functions are synchronous: they block the calling thread until a response arrives or the configured timeout expires. Applications that need non-blocking requests can call them from an application-owned worker thread. Streaming subscriptions receive messages on a background thread, with callbacks dispatched either on that receive thread or on the configured thread pool.
+
 This wrapper uses the zermq/protobuf api mostly, but uses the http/json api for history data as it's not currently exposed via the zmq api.
 
 ## Installing
@@ -111,5 +113,4 @@ ctest --test-dir build -C Debug --output-on-failure
 ## TODO:
 - example server for testing without the SDK demo running
 - tests --> make transport layer injectable for easier testing?
-- create example to test/demo async stuff
 - docs
