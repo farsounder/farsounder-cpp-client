@@ -2,7 +2,6 @@
 
 #include <cpr/cpr.h>
 
-#include <future>
 #include <nlohmann/json.hpp>
 #include <optional>
 #include <stdexcept>
@@ -162,12 +161,6 @@ GetProcessorSettingsResponse get_processor_settings(
     return response;
 }
 
-std::future<GetProcessorSettingsResponse> get_processor_settings_async(
-    const config::ClientConfig& config) {
-    return std::async(std::launch::async,
-                      [config]() { return get_processor_settings(config); });
-}
-
 SetFieldOfViewResponse set_field_of_view(const config::ClientConfig& config,
                                          FieldOfView fov) {
     proto::nav_api::SetFieldOfViewRequest request;
@@ -180,13 +173,6 @@ SetFieldOfViewResponse set_field_of_view(const config::ClientConfig& config,
     response.result =
         farsounder::detail::convert_result(proto_response.result());
     return response;
-}
-
-std::future<SetFieldOfViewResponse> set_field_of_view_async(
-    const config::ClientConfig& config, FieldOfView fov) {
-    return std::async(std::launch::async, [config, fov]() {
-        return set_field_of_view(config, fov);
-    });
 }
 
 SetBottomDetectionResponse set_bottom_detection(
@@ -204,13 +190,6 @@ SetBottomDetectionResponse set_bottom_detection(
     return response;
 }
 
-std::future<SetBottomDetectionResponse> set_bottom_detection_async(
-    const config::ClientConfig& config, bool enable_bottom_detection) {
-    return std::async(std::launch::async, [config, enable_bottom_detection]() {
-        return set_bottom_detection(config, enable_bottom_detection);
-    });
-}
-
 SetInWaterSquelchResponse set_inwater_squelch(
     const config::ClientConfig& config, float new_squelch_val) {
     proto::nav_api::SetInWaterSquelchRequest request;
@@ -224,13 +203,6 @@ SetInWaterSquelchResponse set_inwater_squelch(
     response.result =
         farsounder::detail::convert_result(proto_response.result());
     return response;
-}
-
-std::future<SetInWaterSquelchResponse> set_inwater_squelch_async(
-    const config::ClientConfig& config, float new_squelch_val) {
-    return std::async(std::launch::async, [config, new_squelch_val]() {
-        return set_inwater_squelch(config, new_squelch_val);
-    });
 }
 
 SetSquelchlessInWaterDetectorResponse set_squelchless_inwater_detector(
@@ -249,16 +221,6 @@ SetSquelchlessInWaterDetectorResponse set_squelchless_inwater_detector(
     return response;
 }
 
-std::future<SetSquelchlessInWaterDetectorResponse>
-set_squelchless_inwater_detector_async(const config::ClientConfig& config,
-                                       bool enable_squelchless_detection) {
-    return std::async(std::launch::async,
-                      [config, enable_squelchless_detection]() {
-                          return set_squelchless_inwater_detector(
-                              config, enable_squelchless_detection);
-                      });
-}
-
 GetVesselInfoResponse get_vessel_info(const config::ClientConfig& config) {
     proto::nav_api::GetVesselInfoRequest request;
     auto proto_response = send_request<proto::nav_api::GetVesselInfoRequest,
@@ -271,12 +233,6 @@ GetVesselInfoResponse get_vessel_info(const config::ClientConfig& config) {
     response.info =
         farsounder::detail::convert_vessel_info(proto_response.info());
     return response;
-}
-
-std::future<GetVesselInfoResponse> get_vessel_info_async(
-    const config::ClientConfig& config) {
-    return std::async(std::launch::async,
-                      [config]() { return get_vessel_info(config); });
 }
 
 history::HistoryData get_history_data(const config::ClientConfig& config,
